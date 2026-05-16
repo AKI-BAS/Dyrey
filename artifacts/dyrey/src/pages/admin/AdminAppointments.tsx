@@ -1,14 +1,22 @@
 import { useState } from "react";
-import { useListAppointments, useUpdateAppointment, useCancelAppointment } from "@workspace/api-client-react";
+import {
+  useListAppointments,
+  useUpdateAppointment,
+  useCancelAppointment,
+  getListAppointmentsQueryKey,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import AdminLayout from "./AdminLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { CheckCircle2, XCircle, Search } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { CheckCircle2, XCircle, Search, Phone, Mail, CalendarDays, Clock, MessageSquare, PawPrint, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { format, parseISO } from "date-fns";
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -17,9 +25,184 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: "bg-red-100 text-red-800 border-red-200",
 };
 
+type Appointment = NonNullable<ReturnType<typeof useListAppointments>["data"]>[0];
+
+function AppointmentDetailDialog({
+  appointment,
+  open,
+  onClose,
+  onConfirm,
+  onComplete,
+  onCancel,
+  loading,
+}: {
+  appointment: Appointment | null;
+  open: boolean;
+  onClose: () => void;
+  onConfirm: (id: number) => void;
+  onComplete: (id: number) => void;
+  onCancel: (id: number) => void;
+  loading: boolean;
+}) {
+  if (!appointment) return null;
+  const a = appointment;
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <div className="flex items-start justify-between gap-4">
+            <DialogTitle className="text-xl">
+              {a.petName}
+              <span className="text-muted-foreground font-normal text-base ml-2">({a.petType})</span>
+            </DialogTitle>
+            <Badge variant="outline" className={`shrink-0 font-medium text-sm px-3 py-1 ${STATUS_COLORS[a.status] ?? ""}`}>
+              {a.status.charAt(0).toUpperCase() + a.status.slice(1)}
+            </Badge>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-5 mt-2">
+          {/* Appointment Details */}
+          <div className="grid grid-cols-2 gap-4 bg-slate-50 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                <CalendarDays className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Date</p>
+                <p className="font-semibold text-sm">{format(parseISO(a.date), "EEEE, MMMM d, yyyy")}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                <Clock className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Time</p>
+                <p className="font-semibold text-sm">{a.time}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Service */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Service</p>
+            <p className="font-medium text-slate-800">{a.serviceName}</p>
+          </div>
+
+          <Separator />
+
+          {/* Pet & Owner */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+                <PawPrint className="h-3 w-3" /> Pet
+              </p>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Name</span>
+                  <span className="font-medium">{a.petName}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Type</span>
+                  <span className="font-medium">{a.petType}</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Owner</p>
+              <div className="space-y-2">
+                <p className="font-medium text-sm">{a.ownerName}</p>
+                <a href={`mailto:${a.ownerEmail}`} className="flex items-center gap-2 text-sm text-primary hover:underline">
+                  <Mail className="h-3.5 w-3.5 shrink-0" /> {a.ownerEmail}
+                </a>
+                {a.ownerPhone && (
+                  <a href={`tel:${a.ownerPhone}`} className="flex items-center gap-2 text-sm text-primary hover:underline">
+                    <Phone className="h-3.5 w-3.5 shrink-0" /> {a.ownerPhone}
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Customer message / reason */}
+          {a.customDescription && (
+            <>
+              <Separator />
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertCircle className="h-4 w-4 text-amber-500" />
+                  <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">Customer's Reason — Review before appointment</p>
+                </div>
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                  <p className="text-sm text-slate-800 leading-relaxed">"{a.customDescription}"</p>
+                </div>
+                <p className="text-xs text-slate-400 mt-2 flex items-center gap-1">
+                  <Phone className="h-3 w-3" /> Consider calling the owner for more information before the visit.
+                </p>
+              </div>
+            </>
+          )}
+
+          {/* Notes */}
+          {a.notes && (
+            <>
+              <Separator />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+                  <MessageSquare className="h-3 w-3" /> Additional Notes
+                </p>
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                  <p className="text-sm text-slate-700 leading-relaxed">{a.notes}</p>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        <DialogFooter className="gap-2 mt-4 flex-wrap">
+          <Button variant="outline" onClick={onClose} className="mr-auto">Close</Button>
+          {a.status !== "cancelled" && a.status !== "completed" && (
+            <Button
+              variant="outline"
+              className="text-red-600 border-red-200 hover:bg-red-50"
+              onClick={() => { onCancel(a.id); onClose(); }}
+              disabled={loading}
+            >
+              <XCircle className="h-4 w-4 mr-1.5" /> Cancel
+            </Button>
+          )}
+          {a.status === "pending" && (
+            <Button
+              variant="outline"
+              className="text-blue-600 border-blue-200 hover:bg-blue-50"
+              onClick={() => { onConfirm(a.id); onClose(); }}
+              disabled={loading}
+            >
+              <CheckCircle2 className="h-4 w-4 mr-1.5" /> Confirm
+            </Button>
+          )}
+          {a.status === "confirmed" && (
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => { onComplete(a.id); onClose(); }}
+              disabled={loading}
+            >
+              <CheckCircle2 className="h-4 w-4 mr-1.5" /> Mark Completed
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function AdminAppointments() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Appointment | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -40,10 +223,12 @@ export default function AdminAppointments() {
     );
   }) ?? [];
 
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: getListAppointmentsQueryKey() });
+
   const handleStatus = async (id: number, status: string) => {
     try {
       await updateAppointment.mutateAsync({ id, data: { status } });
-      queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+      invalidate();
       toast({ title: "Updated", description: `Appointment marked as ${status}.` });
     } catch {
       toast({ title: "Error", description: "Failed to update appointment.", variant: "destructive" });
@@ -53,19 +238,21 @@ export default function AdminAppointments() {
   const handleCancel = async (id: number) => {
     try {
       await cancelAppointment.mutateAsync({ id });
-      queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+      invalidate();
       toast({ title: "Cancelled", description: "Appointment cancelled." });
     } catch {
       toast({ title: "Error", description: "Failed to cancel appointment.", variant: "destructive" });
     }
   };
 
+  const loading = updateAppointment.isPending || cancelAppointment.isPending;
+
   return (
     <AdminLayout>
       <div className="space-y-6 max-w-5xl">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Appointments</h1>
-          <p className="text-slate-500 text-sm mt-1">Manage and update all bookings</p>
+          <p className="text-slate-500 text-sm mt-1">Click any row to view full details</p>
         </div>
 
         <div className="flex gap-3 flex-wrap">
@@ -101,38 +288,41 @@ export default function AdminAppointments() {
             ) : (
               <div className="divide-y">
                 {filtered.map(a => (
-                  <div key={a.id} className="p-4 flex items-start justify-between gap-4 flex-wrap">
-                    <div className="space-y-1 min-w-0">
+                  <div
+                    key={a.id}
+                    className="p-4 flex items-start justify-between gap-4 flex-wrap cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => setSelected(a)}
+                  >
+                    <div className="space-y-1 min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-semibold text-sm">{a.ownerName}</p>
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${STATUS_COLORS[a.status] ?? ""}`}>
                           {a.status}
                         </span>
+                        {a.customDescription && (
+                          <span className="text-xs bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <AlertCircle className="h-2.5 w-2.5" /> Has message
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm text-slate-600">
                         {a.petName} ({a.petType}) · {a.serviceName}
                       </p>
                       <p className="text-xs text-slate-500">
-                        {a.date} at {a.time} · {a.ownerEmail} · {a.ownerPhone}
+                        {a.date} at {a.time} · {a.ownerEmail}
+                        {a.ownerPhone ? ` · ${a.ownerPhone}` : ""}
                       </p>
-                      {a.customDescription && (
-                        <p className="text-xs text-slate-500 italic">Reason: {a.customDescription}</p>
-                      )}
-                      {a.notes && (
-                        <p className="text-xs text-slate-400">Notes: {a.notes}</p>
-                      )}
                     </div>
-                    <div className="flex gap-2 shrink-0">
+                    <div className="flex gap-2 shrink-0" onClick={e => e.stopPropagation()}>
                       {a.status === "pending" && (
                         <Button
                           size="sm"
                           variant="outline"
                           className="text-blue-600 border-blue-200 hover:bg-blue-50"
                           onClick={() => handleStatus(a.id, "confirmed")}
-                          disabled={updateAppointment.isPending}
+                          disabled={loading}
                         >
-                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                          Confirm
+                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Confirm
                         </Button>
                       )}
                       {a.status === "confirmed" && (
@@ -141,10 +331,9 @@ export default function AdminAppointments() {
                           variant="outline"
                           className="text-green-600 border-green-200 hover:bg-green-50"
                           onClick={() => handleStatus(a.id, "completed")}
-                          disabled={updateAppointment.isPending}
+                          disabled={loading}
                         >
-                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                          Complete
+                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Complete
                         </Button>
                       )}
                       {a.status !== "cancelled" && a.status !== "completed" && (
@@ -153,10 +342,9 @@ export default function AdminAppointments() {
                           variant="outline"
                           className="text-red-600 border-red-200 hover:bg-red-50"
                           onClick={() => handleCancel(a.id)}
-                          disabled={cancelAppointment.isPending}
+                          disabled={loading}
                         >
-                          <XCircle className="h-3.5 w-3.5 mr-1" />
-                          Cancel
+                          <XCircle className="h-3.5 w-3.5 mr-1" /> Cancel
                         </Button>
                       )}
                     </div>
@@ -167,6 +355,16 @@ export default function AdminAppointments() {
           </CardContent>
         </Card>
       </div>
+
+      <AppointmentDetailDialog
+        appointment={selected}
+        open={!!selected}
+        onClose={() => setSelected(null)}
+        onConfirm={id => handleStatus(id, "confirmed")}
+        onComplete={id => handleStatus(id, "completed")}
+        onCancel={handleCancel}
+        loading={loading}
+      />
     </AdminLayout>
   );
 }

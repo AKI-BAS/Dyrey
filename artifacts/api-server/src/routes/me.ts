@@ -32,7 +32,7 @@ router.get("/me/appointments", async (req, res): Promise<void> => {
   const appointments = await db
     .select()
     .from(appointmentsTable)
-    .where(eq(appointmentsTable.customerEmail, email))
+    .where(eq(appointmentsTable.ownerEmail, email))
     .orderBy(appointmentsTable.createdAt);
 
   res.json(appointments.map((a) => ({ ...a, createdAt: a.createdAt.toISOString() })));
