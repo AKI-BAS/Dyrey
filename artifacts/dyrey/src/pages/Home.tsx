@@ -2,11 +2,13 @@ import { Link } from "wouter";
 import { ArrowRight, Calendar, Heart, ShieldPlus, ShoppingBag, Clock, Package } from "lucide-react";
 import { motion } from "framer-motion";
 import { useListServices, useListFeaturedProducts } from "@workspace/api-client-react";
+import { useT } from "@/hooks/use-language";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Home() {
+  const t = useT();
   const { data: services, isLoading: loadingServices } = useListServices();
   const { data: featuredProducts, isLoading: loadingProducts } = useListFeaturedProducts();
 
@@ -23,20 +25,20 @@ export default function Home() {
               transition={{ duration: 0.5 }}
             >
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-slate-900 dark:text-white mb-6">
-                Compassionate Care for Your Beloved Pets
+                {t("home_hero_title")}
               </h1>
               <p className="text-lg md:text-xl text-slate-600 dark:text-slate-300 mb-8 leading-relaxed">
-                Modern veterinary medicine combined with genuine warmth. From routine check-ups to specialized treatments, we are here for you and your animals in Eyjafjörður.
+                {t("home_hero_subtitle")}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/book">
                   <Button size="lg" className="w-full sm:w-auto h-12 px-8 text-base">
-                    Book Appointment
+                    {t("home_hero_book")}
                   </Button>
                 </Link>
                 <Link href="/shop">
                   <Button variant="outline" size="lg" className="w-full sm:w-auto h-12 px-8 text-base bg-white/50 backdrop-blur-sm hover:bg-white/80">
-                    Visit Pet Shop
+                    {t("home_hero_shop")}
                   </Button>
                 </Link>
               </div>
@@ -53,22 +55,22 @@ export default function Home() {
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 text-primary">
                 <Heart className="h-6 w-6" />
               </div>
-              <h3 className="font-semibold text-lg mb-2">Caring Staff</h3>
-              <p className="text-muted-foreground text-sm">Passionate professionals who treat every animal as their own.</p>
+              <h3 className="font-semibold text-lg mb-2">{t("home_trust_staff_title")}</h3>
+              <p className="text-muted-foreground text-sm">{t("home_trust_staff_desc")}</p>
             </div>
             <div className="flex flex-col items-center p-4">
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 text-primary">
                 <ShieldPlus className="h-6 w-6" />
               </div>
-              <h3 className="font-semibold text-lg mb-2">Modern Clinic</h3>
-              <p className="text-muted-foreground text-sm">State-of-the-art diagnostic and surgical equipment.</p>
+              <h3 className="font-semibold text-lg mb-2">{t("home_trust_clinic_title")}</h3>
+              <p className="text-muted-foreground text-sm">{t("home_trust_clinic_desc")}</p>
             </div>
             <div className="flex flex-col items-center p-4">
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 text-primary">
                 <Clock className="h-6 w-6" />
               </div>
-              <h3 className="font-semibold text-lg mb-2">Online Booking</h3>
-              <p className="text-muted-foreground text-sm">Schedule appointments easily 24/7 through our website.</p>
+              <h3 className="font-semibold text-lg mb-2">{t("home_trust_booking_title")}</h3>
+              <p className="text-muted-foreground text-sm">{t("home_trust_booking_desc")}</p>
             </div>
           </div>
         </div>
@@ -79,12 +81,12 @@ export default function Home() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
             <div>
-              <h2 className="text-3xl font-bold tracking-tight mb-4">Veterinary Services</h2>
-              <p className="text-muted-foreground max-w-2xl">Comprehensive healthcare for small animals, from vaccinations to complex surgeries.</p>
+              <h2 className="text-3xl font-bold tracking-tight mb-4">{t("home_services_title")}</h2>
+              <p className="text-muted-foreground max-w-2xl">{t("home_services_desc")}</p>
             </div>
             <Link href="/book">
               <Button variant="outline" className="gap-2">
-                See All Services <ArrowRight className="h-4 w-4" />
+                {t("home_services_link")} <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
           </div>
@@ -108,7 +110,7 @@ export default function Home() {
                   <CardHeader>
                     <CardTitle className="text-xl">{service.name}</CardTitle>
                     <CardDescription className="flex items-center gap-2 mt-1">
-                      <Clock className="h-4 w-4" /> {service.duration} minutes
+                      <Clock className="h-4 w-4" /> {service.duration} min
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -131,12 +133,12 @@ export default function Home() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
             <div>
-              <h2 className="text-3xl font-bold tracking-tight mb-4">Featured Pet Supplies</h2>
-              <p className="text-muted-foreground max-w-2xl">High-quality food, toys, and care products recommended by our veterinarians.</p>
+              <h2 className="text-3xl font-bold tracking-tight mb-4">{t("home_products_title")}</h2>
+              <p className="text-muted-foreground max-w-2xl">{t("home_products_desc")}</p>
             </div>
             <Link href="/shop">
               <Button variant="outline" className="gap-2">
-                Browse Shop <ShoppingBag className="h-4 w-4" />
+                {t("home_products_link")} <ShoppingBag className="h-4 w-4" />
               </Button>
             </Link>
           </div>
@@ -159,9 +161,9 @@ export default function Home() {
                   <Card className="overflow-hidden border-none shadow-sm hover:shadow-md transition-all group h-full flex flex-col cursor-pointer bg-slate-50/50 dark:bg-slate-900/50">
                     <div className="aspect-square relative overflow-hidden bg-white p-6">
                       {product.imageUrl ? (
-                        <img 
-                          src={product.imageUrl} 
-                          alt={product.name} 
+                        <img
+                          src={product.imageUrl}
+                          alt={product.name}
                           className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
@@ -182,7 +184,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
     </div>
   );
 }

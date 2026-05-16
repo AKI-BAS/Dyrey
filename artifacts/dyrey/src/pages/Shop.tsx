@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { useListProducts, useListProductCategories } from "@workspace/api-client-react";
+import { useT } from "@/hooks/use-language";
 import { Search, Package, Filter, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,13 +12,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 export default function Shop() {
+  const t = useT();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string | undefined>(undefined);
 
   const { data: products, isLoading: loadingProducts } = useListProducts(
     { search: search || undefined, category }
   );
-
   const { data: categories, isLoading: loadingCategories } = useListProductCategories();
 
   const handleCategoryClick = (cat: string | undefined) => {
@@ -27,7 +28,7 @@ export default function Shop() {
   const SidebarContent = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="font-medium text-lg mb-4">Categories</h3>
+        <h3 className="font-medium text-lg mb-4">{t("shop_categories")}</h3>
         {loadingCategories ? (
           <div className="space-y-2">
             <Skeleton className="h-8 w-full" />
@@ -41,7 +42,7 @@ export default function Shop() {
               className="w-full justify-start font-normal"
               onClick={() => handleCategoryClick(undefined)}
             >
-              All Products
+              {t("shop_allProducts")}
             </Button>
             {categories?.map((cat) => (
               <Button
@@ -63,10 +64,8 @@ export default function Shop() {
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-4">Pet Shop</h1>
-        <p className="text-muted-foreground max-w-3xl text-lg">
-          High-quality nutrition, toys, and care products for your pets.
-        </p>
+        <h1 className="text-3xl font-bold tracking-tight mb-4">{t("shop_title")}</h1>
+        <p className="text-muted-foreground max-w-3xl text-lg">{t("shop_subtitle")}</p>
       </div>
 
       <div className="flex flex-col md:flex-row gap-8">
@@ -83,7 +82,7 @@ export default function Shop() {
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search products..."
+                placeholder={t("shop_search")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
@@ -102,12 +101,12 @@ export default function Shop() {
               <SheetTrigger asChild>
                 <Button variant="outline" className="md:hidden w-full sm:w-auto">
                   <Filter className="h-4 w-4 mr-2" />
-                  Filters {category && "(1)"}
+                  {t("shop_filters")} {category && "(1)"}
                 </Button>
               </SheetTrigger>
               <SheetContent side="left">
                 <SheetHeader>
-                  <SheetTitle>Filters</SheetTitle>
+                  <SheetTitle>{t("shop_filters")}</SheetTitle>
                 </SheetHeader>
                 <div className="mt-6">
                   <SidebarContent />
@@ -131,8 +130,8 @@ export default function Shop() {
             ) : products?.length === 0 ? (
               <div className="col-span-full py-12 text-center">
                 <Package className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-4" />
-                <h3 className="text-lg font-medium">No products found</h3>
-                <p className="text-muted-foreground">Try adjusting your filters or search query.</p>
+                <h3 className="text-lg font-medium">{t("shop_noProducts")}</h3>
+                <p className="text-muted-foreground">{t("shop_noProducts_desc")}</p>
               </div>
             ) : (
               products?.map((product) => (
@@ -140,9 +139,9 @@ export default function Shop() {
                   <Card className="overflow-hidden border-none shadow-sm hover:shadow-md transition-all group h-full flex flex-col cursor-pointer bg-slate-50/50 dark:bg-slate-900/50">
                     <div className="aspect-square relative overflow-hidden bg-white p-6">
                       {product.imageUrl ? (
-                        <img 
-                          src={product.imageUrl} 
-                          alt={product.name} 
+                        <img
+                          src={product.imageUrl}
+                          alt={product.name}
                           className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
@@ -152,7 +151,7 @@ export default function Shop() {
                       )}
                       {!product.inStock && (
                         <div className="absolute top-2 right-2 bg-destructive text-destructive-foreground text-xs font-semibold px-2 py-1 rounded">
-                          Out of Stock
+                          {t("shop_outOfStock")}
                         </div>
                       )}
                     </div>

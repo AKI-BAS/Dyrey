@@ -6,6 +6,7 @@ import { z } from "zod";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, CheckCircle2, Clock } from "lucide-react";
 import { useCreateAppointment, useListServices } from "@workspace/api-client-react";
+import { useT } from "@/hooks/use-language";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,6 +38,7 @@ const TIME_SLOTS = [
 export default function BookAppointment() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const t = useT();
   const { data: services, isLoading: loadingServices } = useListServices();
   const createAppointment = useCreateAppointment();
   const [isSuccess, setIsSuccess] = useState(false);
@@ -90,12 +92,12 @@ export default function BookAppointment() {
         <div className="h-20 w-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
           <CheckCircle2 className="h-10 w-10" />
         </div>
-        <h2 className="text-3xl font-bold mb-4">Request Sent Successfully!</h2>
+        <h2 className="text-3xl font-bold mb-4">{t("book_success_title")}</h2>
         <p className="text-muted-foreground mb-8 text-lg">
-          We have received your appointment request. Our staff will review it and send a confirmation to your email shortly.
+          {t("book_success_desc")}
         </p>
         <Link href="/appointments">
-          <Button size="lg">View My Appointments</Button>
+          <Button size="lg">{t("book_success_btn")}</Button>
         </Link>
       </div>
     );
@@ -105,30 +107,28 @@ export default function BookAppointment() {
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
       <div className="max-w-3xl mx-auto">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold tracking-tight mb-4">Book an Appointment</h1>
-          <p className="text-muted-foreground text-lg">
-            Schedule a visit with our veterinary professionals. We look forward to seeing you and your pet.
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight mb-4">{t("book_title")}</h1>
+          <p className="text-muted-foreground text-lg">{t("book_subtitle")}</p>
         </div>
 
         <Card className="border shadow-sm">
           <CardHeader className="bg-slate-50/50 border-b pb-6">
-            <CardTitle>Appointment Details</CardTitle>
-            <CardDescription>Fill out the form below to request a time slot.</CardDescription>
+            <CardTitle>{t("book_card_title")}</CardTitle>
+            <CardDescription>{t("book_card_desc")}</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                 {/* Pet Information */}
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-lg border-b pb-2">1. Pet Information</h3>
+                  <h3 className="font-semibold text-lg border-b pb-2">{t("book_section1")}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="petName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Pet's Name</FormLabel>
+                          <FormLabel>{t("book_petName")}</FormLabel>
                           <FormControl>
                             <Input placeholder="Max" {...field} />
                           </FormControl>
@@ -141,7 +141,7 @@ export default function BookAppointment() {
                       name="petType"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Species / Breed</FormLabel>
+                          <FormLabel>{t("book_petType")}</FormLabel>
                           <FormControl>
                             <Input placeholder="Dog / Golden Retriever" {...field} />
                           </FormControl>
@@ -154,20 +154,20 @@ export default function BookAppointment() {
 
                 {/* Service Selection */}
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-lg border-b pb-2">2. Service</h3>
+                  <h3 className="font-semibold text-lg border-b pb-2">{t("book_section2")}</h3>
                   <FormField
                     control={form.control}
                     name="serviceId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Reason for visit</FormLabel>
+                        <FormLabel>{t("book_reason")}</FormLabel>
                         <Select
                           disabled={loadingServices}
                           onValueChange={(val) => field.onChange(Number(val))}
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select a service" />
+                              <SelectValue placeholder={t("book_selectService")} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -188,10 +188,10 @@ export default function BookAppointment() {
                       name="customDescription"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Please describe the reason for your visit</FormLabel>
+                          <FormLabel>{t("book_describeReason")}</FormLabel>
                           <FormControl>
                             <Textarea
-                              placeholder="Describe your pet's symptoms or what you'd like to discuss..."
+                              placeholder={t("book_describePlaceholder")}
                               className="resize-none"
                               rows={3}
                               {...field}
@@ -206,14 +206,14 @@ export default function BookAppointment() {
 
                 {/* Date & Time */}
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-lg border-b pb-2">3. Preferred Time</h3>
+                  <h3 className="font-semibold text-lg border-b pb-2">{t("book_section3")}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField
                       control={form.control}
                       name="date"
                       render={({ field }) => (
                         <FormItem className="flex flex-col">
-                          <FormLabel>Date</FormLabel>
+                          <FormLabel>{t("book_date")}</FormLabel>
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
@@ -224,7 +224,7 @@ export default function BookAppointment() {
                                     !field.value && "text-muted-foreground"
                                   )}
                                 >
-                                  {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                  {field.value ? format(field.value, "PPP") : <span>{t("book_pickDate")}</span>}
                                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                 </Button>
                               </FormControl>
@@ -252,11 +252,11 @@ export default function BookAppointment() {
                       name="time"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Time Slot</FormLabel>
+                          <FormLabel>{t("book_timeSlot")}</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select a time" />
+                                <SelectValue placeholder={t("book_selectTime")} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -278,14 +278,14 @@ export default function BookAppointment() {
 
                 {/* Owner Information */}
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-lg border-b pb-2">4. Your Details</h3>
+                  <h3 className="font-semibold text-lg border-b pb-2">{t("book_section4")}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="ownerName"
                       render={({ field }) => (
                         <FormItem className="md:col-span-2">
-                          <FormLabel>Full Name</FormLabel>
+                          <FormLabel>{t("book_fullName")}</FormLabel>
                           <FormControl>
                             <Input placeholder="John Doe" {...field} />
                           </FormControl>
@@ -298,7 +298,7 @@ export default function BookAppointment() {
                       name="ownerEmail"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>{t("book_email")}</FormLabel>
                           <FormControl>
                             <Input type="email" placeholder="john@example.com" {...field} />
                           </FormControl>
@@ -311,7 +311,7 @@ export default function BookAppointment() {
                       name="ownerPhone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Phone Number</FormLabel>
+                          <FormLabel>{t("book_phone")}</FormLabel>
                           <FormControl>
                             <Input type="tel" placeholder="+354 123 4567" {...field} />
                           </FormControl>
@@ -324,10 +324,12 @@ export default function BookAppointment() {
                       name="notes"
                       render={({ field }) => (
                         <FormItem className="md:col-span-2">
-                          <FormLabel>Additional Notes <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                          <FormLabel>
+                            {t("book_notes")} <span className="text-muted-foreground font-normal">{t("book_notes_optional")}</span>
+                          </FormLabel>
                           <FormControl>
                             <Textarea
-                              placeholder="Any specific symptoms or questions?"
+                              placeholder={t("book_notes_placeholder")}
                               className="resize-none"
                               {...field}
                             />
@@ -340,7 +342,7 @@ export default function BookAppointment() {
                 </div>
 
                 <Button type="submit" className="w-full h-12 text-base" disabled={createAppointment.isPending}>
-                  {createAppointment.isPending ? "Submitting Request..." : "Request Appointment"}
+                  {createAppointment.isPending ? t("book_submitting") : t("book_submit")}
                 </Button>
               </form>
             </Form>

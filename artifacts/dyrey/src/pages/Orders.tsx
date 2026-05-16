@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/hooks/use-language";
 import { Link } from "wouter";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -40,6 +41,7 @@ function useMyOrders(enabled: boolean) {
 }
 
 export default function Orders() {
+  const t = useT();
   const { user, isLoaded } = useUser();
   const { openSignIn } = useClerk();
   const { data: orders, isLoading } = useMyOrders(isLoaded && !!user);
@@ -61,16 +63,14 @@ export default function Orders() {
           <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-6">
             <Lock className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold mb-3">Sign in to view your orders</h1>
-          <p className="text-muted-foreground max-w-sm mb-8">
-            Create a free account or sign in to track your orders and view your order history.
-          </p>
+          <h1 className="text-2xl font-bold mb-3">{t("orders_gated_title")}</h1>
+          <p className="text-muted-foreground max-w-sm mb-8">{t("orders_gated_desc")}</p>
           <div className="flex flex-col sm:flex-row gap-3">
             <Button onClick={() => openSignIn()} className="gap-2">
-              <LogIn className="h-4 w-4" /> Sign In
+              <LogIn className="h-4 w-4" /> {t("orders_signIn")}
             </Button>
             <Link href="/shop">
-              <Button variant="outline">Browse Shop</Button>
+              <Button variant="outline">{t("orders_shop")}</Button>
             </Link>
           </div>
         </div>
@@ -81,8 +81,8 @@ export default function Orders() {
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Order History</h1>
-        <p className="text-muted-foreground">View and track your previous shop orders.</p>
+        <h1 className="text-3xl font-bold tracking-tight mb-2">{t("orders_title")}</h1>
+        <p className="text-muted-foreground">{t("orders_subtitle")}</p>
       </div>
 
       {isLoading || !isLoaded ? (
@@ -103,10 +103,10 @@ export default function Orders() {
       ) : orders?.length === 0 ? (
         <div className="text-center py-20 bg-slate-50/50 rounded-xl border border-dashed">
           <ShoppingBag className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-4" />
-          <h3 className="text-lg font-medium">No orders found</h3>
-          <p className="text-muted-foreground mb-6">You haven't placed any orders yet.</p>
+          <h3 className="text-lg font-medium">{t("orders_empty")}</h3>
+          <p className="text-muted-foreground mb-6">{t("orders_empty_desc")}</p>
           <Link href="/shop">
-            <Button variant="outline">Browse Shop</Button>
+            <Button variant="outline">{t("orders_browse")}</Button>
           </Link>
         </div>
       ) : (
@@ -116,17 +116,17 @@ export default function Orders() {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-6 bg-slate-50 border-b border-border/60 gap-4">
                 <div>
                   <div className="flex items-center gap-3 mb-1">
-                    <h3 className="font-semibold">Order #{order.id.toString().padStart(4, "0")}</h3>
+                    <h3 className="font-semibold">Pöntun #{order.id.toString().padStart(4, "0")}</h3>
                     <Badge variant="outline" className={`font-medium ${getStatusColor(order.status)}`}>
                       {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Placed on {format(parseISO(order.createdAt), "MMMM d, yyyy 'at' h:mm a")}
+                    {t("orders_placed")} {format(parseISO(order.createdAt), "MMMM d, yyyy 'at' h:mm a")}
                   </p>
                 </div>
                 <div className="text-left sm:text-right">
-                  <div className="text-sm text-muted-foreground mb-1">Total Amount</div>
+                  <div className="text-sm text-muted-foreground mb-1">{t("orders_total")}</div>
                   <div className="font-bold text-lg">{order.totalAmount.toLocaleString()} kr.</div>
                 </div>
               </div>
@@ -144,7 +144,7 @@ export default function Orders() {
                             {item.productName}
                           </Link>
                           <div className="text-sm text-muted-foreground mt-1">
-                            Qty: {item.quantity} × {item.unitPrice.toLocaleString()} kr.
+                            {t("orders_qty")}: {item.quantity} × {item.unitPrice.toLocaleString()} kr.
                           </div>
                         </div>
                       </div>

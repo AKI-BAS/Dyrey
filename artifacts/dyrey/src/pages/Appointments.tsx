@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useT } from "@/hooks/use-language";
 import { Link } from "wouter";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -24,8 +25,8 @@ interface Appointment {
   status: string;
   notes: string | null;
   customDescription: string | null;
-  customerName: string;
-  customerEmail: string;
+  ownerName: string;
+  ownerEmail: string;
   createdAt: string;
 }
 
@@ -42,6 +43,7 @@ function useMyAppointments(enabled: boolean) {
 }
 
 export default function Appointments() {
+  const t = useT();
   const { user, isLoaded } = useUser();
   const { openSignIn } = useClerk();
   const { data: appointments, isLoading } = useMyAppointments(isLoaded && !!user);
@@ -52,10 +54,10 @@ export default function Appointments() {
   const handleCancel = async (id: number) => {
     try {
       await cancelAppointment.mutateAsync({ id });
-      toast({ title: "Appointment cancelled", description: "Your appointment has been successfully cancelled." });
+      toast({ title: t("appt_cancelled"), description: t("appt_cancelSuccess") });
       queryClient.invalidateQueries({ queryKey: ["me", "appointments"] });
     } catch {
-      toast({ title: "Error", description: "Failed to cancel appointment.", variant: "destructive" });
+      toast({ title: "Error", description: t("appt_cancelError"), variant: "destructive" });
     }
   };
 
@@ -76,16 +78,14 @@ export default function Appointments() {
           <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-6">
             <Lock className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold mb-3">Sign in to view your appointments</h1>
-          <p className="text-muted-foreground max-w-sm mb-8">
-            Create a free account or sign in to book appointments and track your pet's vet visits.
-          </p>
+          <h1 className="text-2xl font-bold mb-3">{t("appt_gated_title")}</h1>
+          <p className="text-muted-foreground max-w-sm mb-8">{t("appt_gated_desc")}</p>
           <div className="flex flex-col sm:flex-row gap-3">
             <Button onClick={() => openSignIn()} className="gap-2">
-              <LogIn className="h-4 w-4" /> Sign In
+              <LogIn className="h-4 w-4" /> {t("appt_signIn")}
             </Button>
             <Link href="/book">
-              <Button variant="outline">Book as Guest</Button>
+              <Button variant="outline">{t("appt_bookGuest")}</Button>
             </Link>
           </div>
         </div>
@@ -97,11 +97,11 @@ export default function Appointments() {
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">My Appointments</h1>
-          <p className="text-muted-foreground">Manage your upcoming and past vet visits.</p>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">{t("appt_title")}</h1>
+          <p className="text-muted-foreground">{t("appt_subtitle")}</p>
         </div>
         <Link href="/book">
-          <Button>Book New Appointment</Button>
+          <Button>{t("appt_bookNew")}</Button>
         </Link>
       </div>
 
@@ -128,10 +128,10 @@ export default function Appointments() {
       ) : appointments?.length === 0 ? (
         <div className="text-center py-20 bg-slate-50/50 rounded-xl border border-dashed">
           <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-4" />
-          <h3 className="text-lg font-medium">No appointments found</h3>
-          <p className="text-muted-foreground mb-6">You don't have any appointments scheduled yet.</p>
+          <h3 className="text-lg font-medium">{t("appt_empty")}</h3>
+          <p className="text-muted-foreground mb-6">{t("appt_empty_desc")}</p>
           <Link href="/book">
-            <Button variant="outline">Book an Appointment</Button>
+            <Button variant="outline">{t("appt_bookBtn")}</Button>
           </Link>
         </div>
       ) : (
@@ -168,20 +168,20 @@ export default function Appointments() {
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer">
-                                <Ban className="h-4 w-4 mr-2" /> Cancel Appointment
+                                <Ban className="h-4 w-4 mr-2" /> {t("appt_cancel")}
                               </DropdownMenuItem>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Cancel Appointment?</AlertDialogTitle>
+                                <AlertDialogTitle>{t("appt_cancel_title")}</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to cancel the appointment for {apt.petName}? This action cannot be undone.
+                                  {t("appt_cancel_desc", { pet: apt.petName })}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Keep it</AlertDialogCancel>
+                                <AlertDialogCancel>{t("appt_keepIt")}</AlertDialogCancel>
                                 <AlertDialogAction onClick={() => handleCancel(apt.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                  Yes, Cancel
+                                  {t("appt_yesCancel")}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
