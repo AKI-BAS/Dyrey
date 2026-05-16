@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -6,6 +6,7 @@ import { z } from "zod";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, CheckCircle2, Clock } from "lucide-react";
 import { useCreateAppointment, useListServices } from "@workspace/api-client-react";
+import { useUser } from "@clerk/react";
 import { useT } from "@/hooks/use-language";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,7 @@ export default function BookAppointment() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const t = useT();
+  const { user } = useUser();
   const { data: services, isLoading: loadingServices } = useListServices();
   const createAppointment = useCreateAppointment();
   const [isSuccess, setIsSuccess] = useState(false);
@@ -55,6 +57,15 @@ export default function BookAppointment() {
       customDescription: "",
     },
   });
+
+  // Pre-fill owner info from signed-in Clerk user so appointments link correctly
+  useEffect(() => {
+    if (!user) return;
+    const email = user.primaryEmailAddress?.emailAddress ?? "";
+    const name = [user.firstName, user.lastName].filter(Boolean).join(" ");
+    if (email) form.setValue("ownerEmail", email, { shouldValidate: true });
+    if (name) form.setValue("ownerName", name, { shouldValidate: true });
+  }, [user, form]);
 
   const selectedServiceId = form.watch("serviceId");
   const selectedService = services?.find(s => s.id === selectedServiceId);

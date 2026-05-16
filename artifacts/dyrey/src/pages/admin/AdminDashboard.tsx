@@ -13,9 +13,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 import {
   CalendarDays, Clock, CheckCircle2, XCircle, Users, ChevronLeft, ChevronRight,
-  TrendingUp, ShoppingBag, Pencil, Check,
+  TrendingUp, ShoppingBag, Pencil, Check, Phone, Mail, PawPrint, Stethoscope,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { StaffNotepad } from "@/components/StaffNotepad";
@@ -102,8 +105,25 @@ function CapacityEditor({ date, current, onSaved }: { date: string; current: num
   );
 }
 
+interface AptItem {
+  id: number;
+  ownerName: string;
+  ownerEmail: string;
+  ownerPhone: string;
+  petName: string;
+  petType: string;
+  serviceName: string;
+  date: string;
+  time: string;
+  status: string;
+  notes?: string | null;
+  customDescription?: string | null;
+  createdAt: string;
+}
+
 export default function AdminDashboard() {
   const [weekOffset, setWeekOffset] = useState(0);
+  const [selectedApt, setSelectedApt] = useState<AptItem | null>(null);
   const queryClient = useQueryClient();
 
   const { data: summary, isLoading: loadingSummary } = useGetAppointmentsSummary();
@@ -324,14 +344,17 @@ export default function AdminDashboard() {
                           {aptsInSlot.length > 0 && (
                             <div className="space-y-1">
                               {aptsInSlot.map(a => (
-                                <div key={a.id} title={`${a.ownerName} — ${a.petName} (${a.serviceName})`}
-                                  className={`px-1.5 py-0.5 rounded text-xs truncate max-w-full leading-snug ${
+                                <button
+                                  key={a.id}
+                                  onClick={() => setSelectedApt(a)}
+                                  title={`${a.ownerName} — ${a.petName} (${a.serviceName})`}
+                                  className={`w-full text-left px-1.5 py-0.5 rounded text-xs truncate max-w-full leading-snug cursor-pointer hover:brightness-95 transition-all ${
                                     a.status === "confirmed" ? "bg-blue-100 text-blue-800"
                                     : a.status === "completed" ? "bg-green-100 text-green-800"
                                     : "bg-amber-100 text-amber-800"
                                   }`}>
                                   {a.petName}
-                                </div>
+                                </button>
                               ))}
                               {isOver && <div className="text-red-500 font-semibold">{aptsInSlot.length}/{cap} ⚠</div>}
                             </div>
@@ -346,6 +369,98 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ── Appointment Detail Dialog ── */}
+      <Dialog open={!!selectedApt} onOpenChange={o => { if (!o) setSelectedApt(null); }}>
+        <DialogContent className="max-w-md">
+          {selectedApt && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <PawPrint className="h-4 w-4 text-primary" />
+                  {selectedApt.petName}
+                  <span className="text-sm font-normal text-slate-500">({selectedApt.petType})</span>
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-4 pt-1">
+                {/* Status + date/time */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline" className={
+                    selectedApt.status === "confirmed" ? "bg-blue-100 text-blue-800 border-blue-200"
+                    : selectedApt.status === "completed" ? "bg-green-100 text-green-800 border-green-200"
+                    : selectedApt.status === "cancelled" ? "bg-red-100 text-red-800 border-red-200"
+                    : "bg-amber-100 text-amber-800 border-amber-200"
+                  }>
+                    {selectedApt.status.charAt(0).toUpperCase() + selectedApt.status.slice(1)}
+                  </Badge>
+                  <span className="flex items-center gap-1 text-sm text-slate-600">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    {selectedApt.date}
+                  </span>
+                  <span className="flex items-center gap-1 text-sm text-slate-600">
+                    <Clock className="h-3.5 w-3.5" />
+                    {selectedApt.time}
+                  </span>
+                </div>
+
+                <Separator />
+
+                {/* Service */}
+                <div className="flex items-start gap-3">
+                  <div className="h-8 w-8 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                    <Stethoscope className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Service</p>
+                    <p className="font-semibold text-slate-800">{selectedApt.serviceName}</p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Owner info */}
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Owner</p>
+                  <p className="font-semibold text-slate-800">{selectedApt.ownerName}</p>
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <Mail className="h-3.5 w-3.5 shrink-0" />
+                    <a href={`mailto:${selectedApt.ownerEmail}`} className="hover:text-primary hover:underline truncate">
+                      {selectedApt.ownerEmail}
+                    </a>
+                  </div>
+                  {selectedApt.ownerPhone && (
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <Phone className="h-3.5 w-3.5 shrink-0" />
+                      <a href={`tel:${selectedApt.ownerPhone}`} className="hover:text-primary hover:underline">
+                        {selectedApt.ownerPhone}
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                {/* Notes */}
+                {(selectedApt.notes || selectedApt.customDescription) && (
+                  <>
+                    <Separator />
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Notes</p>
+                      {selectedApt.customDescription && (
+                        <p className="text-sm text-slate-700 bg-amber-50 border border-amber-100 rounded-md p-2.5">
+                          {selectedApt.customDescription}
+                        </p>
+                      )}
+                      {selectedApt.notes && (
+                        <p className="text-sm text-slate-600">{selectedApt.notes}</p>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
