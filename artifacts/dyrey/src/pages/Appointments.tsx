@@ -1,0 +1,162 @@
+import { useListAppointments, useCancelAppointment, getListAppointmentsQueryKey } from "@workspace/api-client-react";
+import { format, parseISO } from "date-fns";
+import { CalendarDays, Clock, MoreHorizontal, FileText, Ban } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
+
+export default function Appointments() {
+  const { data: appointments, isLoading } = useListAppointments();
+  const cancelAppointment = useCancelAppointment();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const handleCancel = async (id: number) => {
+    try {
+      await cancelAppointment.mutateAsync({ id });
+      toast({
+        title: "Appointment cancelled",
+        description: "Your appointment has been successfully cancelled.",
+      });
+      queryClient.invalidateQueries({ queryKey: getListAppointmentsQueryKey() });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to cancel appointment.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'confirmed': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'pending': return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'completed': return 'bg-green-100 text-green-800 border-green-200';
+      case 'cancelled': return 'bg-slate-100 text-slate-800 border-slate-200';
+      default: return 'bg-slate-100 text-slate-800 border-slate-200';
+    }
+  };
+
+  return (
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">My Appointments</h1>
+          <p className="text-muted-foreground">Manage your upcoming and past vet visits.</p>
+        </div>
+        <Link href="/book">
+          <Button>Book New Appointment</Button>
+        </Link>
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-3 w-full">
+                    <Skeleton className="h-6 w-1/4" />
+                    <Skeleton className="h-4 w-1/3" />
+                    <div className="flex gap-4 pt-4">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-4 w-24" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-8 w-24" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : appointments?.length === 0 ? (
+        <div className="text-center py-20 bg-slate-50/50 rounded-xl border border-dashed">
+          <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-4" />
+          <h3 className="text-lg font-medium">No appointments found</h3>
+          <p className="text-muted-foreground mb-6">You don't have any appointments scheduled yet.</p>
+          <Link href="/book">
+            <Button variant="outline">Book an Appointment</Button>
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {appointments?.map((apt) => (
+            <Card key={apt.id} className="shadow-sm overflow-hidden border-border/60 transition-all hover:border-border">
+              <div className="flex flex-col sm:flex-row">
+                <div className="bg-slate-50 p-6 sm:w-64 flex flex-col justify-center border-b sm:border-b-0 sm:border-r border-border/60">
+                  <div className="flex items-center gap-2 text-primary font-medium mb-2">
+                    <CalendarDays className="h-4 w-4" />
+                    <span>{format(parseISO(apt.date), "MMMM d, yyyy")}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-600 mb-4">
+                    <Clock className="h-4 w-4" />
+                    <span>{apt.time}</span>
+                  </div>
+                  <div>
+                    <Badge variant="outline" className={`font-medium ${getStatusColor(apt.status)}`}>
+                      {apt.status.charAt(0).toUpperCase() + apt.status.slice(1)}
+                    </Badge>
+                  </div>
+                </div>
+                
+                <div className="p-6 flex-1 flex flex-col justify-center relative">
+                  {(apt.status === 'pending' || apt.status === 'confirmed') && (
+                    <div className="absolute top-4 right-4">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer">
+                                <Ban className="h-4 w-4 mr-2" /> Cancel Appointment
+                              </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Cancel Appointment?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to cancel the appointment for {apt.petName}? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Keep it</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleCancel(apt.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                  Yes, Cancel
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  )}
+
+                  <h3 className="text-xl font-bold mb-1">{apt.petName} <span className="text-muted-foreground font-normal text-base">({apt.petType})</span></h3>
+                  <p className="text-slate-700 font-medium mb-4">{apt.serviceName}</p>
+                  
+                  {apt.notes && (
+                    <div className="flex items-start gap-2 text-sm text-muted-foreground bg-slate-50/50 p-3 rounded-md">
+                      <FileText className="h-4 w-4 mt-0.5 shrink-0" />
+                      <p>{apt.notes}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

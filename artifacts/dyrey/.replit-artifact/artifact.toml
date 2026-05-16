@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Dýrey Veterinary Hospital"
+version = "1.0.0"
+id = "artifacts/dyrey"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20124
+
+[services.development]
+run = "pnpm --filter @workspace/dyrey run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/dyrey", "run", "build" ]
+publicDir = "artifacts/dyrey/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20124"
+BASE_PATH = "/"

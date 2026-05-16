@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "0N279b2vVga3LPPRbB1mh"
+uri = "file://artifacts/dyrey/public/hero-vet.jpg"
+type = "image"
+title = "A professional photo of a happy dog at a modern veterinary clinic, bright, clean, airy"
