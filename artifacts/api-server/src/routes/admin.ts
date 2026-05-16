@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, sql } from "drizzle-orm";
 import { AdminLoginBody, AdminLoginResponse, GetAdminMeResponse } from "@workspace/api-zod";
-import { db, appointmentsTable, ordersTable, scheduleCapacityTable } from "@workspace/db";
+import { db, appointmentsTable, ordersTable, scheduleCapacityTable, staffNotepadTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -116,6 +116,40 @@ router.post("/admin/schedule-capacity", async (req, res): Promise<void> => {
     })
     .returning();
   res.json(record);
+});
+
+// --- Staff Notepad ---
+
+const NOTEPAD_KEY = "main";
+
+router.get("/admin/notepad", async (req, res): Promise<void> => {
+  if (!requireAdminToken(req, res)) return;
+  const rows = await db.select().from(staffNotepadTable).where(eq(staffNotepadTable.key, NOTEPAD_KEY));
+  if (rows.length === 0) {
+    res.json({ key: NOTEPAD_KEY, content: "", updatedAt: null });
+    return;
+  }
+  const row = rows[0];
+  res.json({ ...row, updatedAt: row.updatedAt.toISOString() });
+});
+
+router.put("/admin/notepad", async (req, res): Promise<void> => {
+  if (!requireAdminToken(req, res)) return;
+  const { content } = req.body as { content: string };
+  if (typeof content !== "string") {
+    res.status(400).json({ error: "content must be a string" });
+    return;
+  }
+  const now = new Date();
+  const [row] = await db
+    .insert(staffNotepadTable)
+    .values({ key: NOTEPAD_KEY, content, updatedAt: now })
+    .onConflictDoUpdate({
+      target: staffNotepadTable.key,
+      set: { content, updatedAt: now },
+    })
+    .returning();
+  res.json({ ...row, updatedAt: row.updatedAt.toISOString() });
 });
 
 export default router;

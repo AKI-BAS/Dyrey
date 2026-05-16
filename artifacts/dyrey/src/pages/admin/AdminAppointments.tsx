@@ -1,22 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   useListAppointments,
   useUpdateAppointment,
   useCancelAppointment,
   getListAppointmentsQueryKey,
 } from "@workspace/api-client-react";
+import type { Appointment } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import AdminLayout from "./AdminLayout";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle2, XCircle, Search, Phone, Mail, CalendarDays, Clock, MessageSquare, PawPrint, AlertCircle } from "lucide-react";
+import {
+  CheckCircle2, XCircle, Search, Phone, Mail, CalendarDays, Clock,
+  MessageSquare, PawPrint, AlertCircle, NotebookPen, Save, Loader2,
+  RefreshCw,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, formatDistanceToNow } from "date-fns";
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+function adminHeaders() {
+  const token = localStorage.getItem("admin_token") ?? "";
+  return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+}
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -25,7 +38,136 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: "bg-red-100 text-red-800 border-red-200",
 };
 
-type Appointment = NonNullable<ReturnType<typeof useListAppointments>["data"]>[0];
+// ---------------------------------------------------------------------------
+// Staff Notepad
+// ---------------------------------------------------------------------------
+
+type SaveState = "idle" | "saving" | "saved" | "error";
+
+function StaffNotepad() {
+  const [content, setContent] = useState("");
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [loaded, setLoaded] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load notepad content
+  useEffect(() => {
+    fetch(`${basePath}/api/admin/notepad`, { headers: adminHeaders() })
+      .then(r => r.json())
+      .then(data => {
+        setContent(data.content ?? "");
+        if (data.updatedAt) setLastSaved(new Date(data.updatedAt));
+        setLoaded(true);
+      })
+      .catch(() => setLoaded(true));
+  }, []);
+
+  const save = useCallback(async (text: string) => {
+    setSaveState("saving");
+    try {
+      const r = await fetch(`${basePath}/api/admin/notepad`, {
+        method: "PUT",
+        headers: adminHeaders(),
+        body: JSON.stringify({ content: text }),
+      });
+      const data = await r.json();
+      setLastSaved(new Date(data.updatedAt));
+      setSaveState("saved");
+      setTimeout(() => setSaveState("idle"), 2000);
+    } catch {
+      setSaveState("error");
+    }
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setContent(val);
+    setSaveState("idle");
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => save(val), 1500);
+  };
+
+  const handleManualSave = () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    save(content);
+  };
+
+  return (
+    <Card className="border-slate-200 shadow-sm flex flex-col h-full">
+      <CardHeader className="pb-3 pt-4 px-4 border-b border-slate-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 bg-amber-100 rounded-md flex items-center justify-center">
+              <NotebookPen className="h-3.5 w-3.5 text-amber-700" />
+            </div>
+            <div>
+              <p className="font-semibold text-sm text-slate-800">Staff Notepad</p>
+              <p className="text-xs text-slate-400">Shared with all staff</p>
+            </div>
+          </div>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7 text-slate-400 hover:text-slate-700"
+            onClick={handleManualSave}
+            title="Save now"
+            disabled={saveState === "saving"}
+          >
+            {saveState === "saving" ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Save className="h-3.5 w-3.5" />
+            )}
+          </Button>
+        </div>
+      </CardHeader>
+
+      <CardContent className="flex-1 flex flex-col p-0 min-h-0">
+        {!loaded ? (
+          <div className="flex items-center justify-center flex-1 text-slate-400">
+            <Loader2 className="h-4 w-4 animate-spin" />
+          </div>
+        ) : (
+          <Textarea
+            value={content}
+            onChange={handleChange}
+            placeholder={"Tasks for today, important updates, reminders for the team...\n\n• Patient arriving at 10:00 needs sedation pre-auth\n• Dr. Sigríður on call from 14:00\n• Fridge temp check due Friday"}
+            className="flex-1 border-0 rounded-none resize-none text-sm text-slate-700 placeholder:text-slate-300 focus-visible:ring-0 p-4 min-h-[280px] bg-transparent"
+          />
+        )}
+      </CardContent>
+
+      <div className="px-4 py-2.5 border-t border-slate-100 flex items-center gap-2">
+        {saveState === "saving" && (
+          <span className="text-xs text-slate-400 flex items-center gap-1">
+            <Loader2 className="h-3 w-3 animate-spin" /> Saving…
+          </span>
+        )}
+        {saveState === "saved" && (
+          <span className="text-xs text-green-600 flex items-center gap-1">
+            <CheckCircle2 className="h-3 w-3" /> Saved
+          </span>
+        )}
+        {saveState === "error" && (
+          <span className="text-xs text-red-500">Failed to save</span>
+        )}
+        {saveState === "idle" && lastSaved && (
+          <span className="text-xs text-slate-400">
+            Saved {formatDistanceToNow(lastSaved, { addSuffix: true })}
+          </span>
+        )}
+        {saveState === "idle" && !lastSaved && (
+          <span className="text-xs text-slate-300">Not yet saved</span>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Appointment Detail Dialog
+// ---------------------------------------------------------------------------
 
 function AppointmentDetailDialog({
   appointment,
@@ -34,6 +176,7 @@ function AppointmentDetailDialog({
   onConfirm,
   onComplete,
   onCancel,
+  onNotesSaved,
   loading,
 }: {
   appointment: Appointment | null;
@@ -42,10 +185,35 @@ function AppointmentDetailDialog({
   onConfirm: (id: number) => void;
   onComplete: (id: number) => void;
   onCancel: (id: number) => void;
+  onNotesSaved: () => void;
   loading: boolean;
 }) {
+  const { toast } = useToast();
+  const updateAppointment = useUpdateAppointment();
+  const [staffNotes, setStaffNotes] = useState("");
+  const [notesSaving, setNotesSaving] = useState(false);
+
+  useEffect(() => {
+    if (appointment) setStaffNotes(appointment.notes ?? "");
+  }, [appointment]);
+
   if (!appointment) return null;
   const a = appointment;
+
+  const handleSaveNotes = async () => {
+    setNotesSaving(true);
+    try {
+      await updateAppointment.mutateAsync({ id: a.id, data: { notes: staffNotes } });
+      onNotesSaved();
+      toast({ title: "Notes saved" });
+    } catch {
+      toast({ title: "Error", description: "Failed to save notes.", variant: "destructive" });
+    } finally {
+      setNotesSaving(false);
+    }
+  };
+
+  const notesChanged = staffNotes !== (a.notes ?? "");
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -63,7 +231,7 @@ function AppointmentDetailDialog({
         </DialogHeader>
 
         <div className="space-y-5 mt-2">
-          {/* Appointment Details */}
+          {/* Date & Time */}
           <div className="grid grid-cols-2 gap-4 bg-slate-50 rounded-xl p-4">
             <div className="flex items-center gap-3">
               <div className="h-9 w-9 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
@@ -146,20 +314,40 @@ function AppointmentDetailDialog({
             </>
           )}
 
-          {/* Notes */}
-          {a.notes && (
-            <>
-              <Separator />
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
-                  <MessageSquare className="h-3 w-3" /> Additional Notes
-                </p>
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                  <p className="text-sm text-slate-700 leading-relaxed">{a.notes}</p>
-                </div>
-              </div>
-            </>
-          )}
+          {/* Staff Notes — editable */}
+          <Separator />
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <MessageSquare className="h-3 w-3" /> Staff Notes
+              </p>
+              {notesChanged && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs gap-1.5 text-primary border-primary/30 hover:bg-primary/5"
+                  onClick={handleSaveNotes}
+                  disabled={notesSaving}
+                >
+                  {notesSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                  Save notes
+                </Button>
+              )}
+              {!notesChanged && a.notes && (
+                <span className="text-xs text-green-600 flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" /> Saved
+                </span>
+              )}
+            </div>
+            <Textarea
+              value={staffNotes}
+              onChange={e => setStaffNotes(e.target.value)}
+              placeholder="Add internal notes about this appointment — treatment plan, observations, follow-up required, medication given…"
+              rows={4}
+              className="text-sm resize-none bg-slate-50 border-slate-200 focus:bg-white"
+            />
+            <p className="text-xs text-slate-400 mt-1.5">Only visible to staff. Not shown to the customer.</p>
+          </div>
         </div>
 
         <DialogFooter className="gap-2 mt-4 flex-wrap">
@@ -198,6 +386,10 @@ function AppointmentDetailDialog({
     </Dialog>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Main page
+// ---------------------------------------------------------------------------
 
 export default function AdminAppointments() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -249,111 +441,124 @@ export default function AdminAppointments() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6 max-w-5xl">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Appointments</h1>
-          <p className="text-slate-500 text-sm mt-1">Click any row to view full details</p>
-        </div>
-
-        <div className="flex gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-48">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input
-              placeholder="Search by name, pet, email…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-9"
-            />
+      <div className="flex gap-6 items-start">
+        {/* ---- Left: Appointments list ---- */}
+        <div className="flex-1 min-w-0 space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Appointments</h1>
+            <p className="text-slate-500 text-sm mt-1">Click any row to view details and add notes</p>
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-44">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="confirmed">Confirmed</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
 
-        <Card>
-          <CardContent className="p-0">
-            {isLoading ? (
-              <p className="p-6 text-sm text-slate-400">Loading appointments…</p>
-            ) : filtered.length === 0 ? (
-              <p className="p-6 text-sm text-slate-400">No appointments found.</p>
-            ) : (
-              <div className="divide-y">
-                {filtered.map(a => (
-                  <div
-                    key={a.id}
-                    className="p-4 flex items-start justify-between gap-4 flex-wrap cursor-pointer hover:bg-slate-50 transition-colors"
-                    onClick={() => setSelected(a)}
-                  >
-                    <div className="space-y-1 min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-semibold text-sm">{a.ownerName}</p>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${STATUS_COLORS[a.status] ?? ""}`}>
-                          {a.status}
-                        </span>
-                        {a.customDescription && (
-                          <span className="text-xs bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <AlertCircle className="h-2.5 w-2.5" /> Has message
+          <div className="flex gap-3 flex-wrap">
+            <div className="relative flex-1 min-w-48">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search by name, pet, email…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="confirmed">Confirmed</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Card>
+            <CardContent className="p-0">
+              {isLoading ? (
+                <p className="p-6 text-sm text-slate-400">Loading appointments…</p>
+              ) : filtered.length === 0 ? (
+                <p className="p-6 text-sm text-slate-400">No appointments found.</p>
+              ) : (
+                <div className="divide-y">
+                  {filtered.map(a => (
+                    <div
+                      key={a.id}
+                      className="p-4 flex items-start justify-between gap-4 flex-wrap cursor-pointer hover:bg-slate-50 transition-colors"
+                      onClick={() => setSelected(a)}
+                    >
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-semibold text-sm">{a.ownerName}</p>
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${STATUS_COLORS[a.status] ?? ""}`}>
+                            {a.status}
                           </span>
+                          {a.customDescription && (
+                            <span className="text-xs bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <AlertCircle className="h-2.5 w-2.5" /> Has message
+                            </span>
+                          )}
+                          {a.notes && (
+                            <span className="text-xs bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <MessageSquare className="h-2.5 w-2.5" /> Has notes
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-slate-600">
+                          {a.petName} ({a.petType}) · {a.serviceName}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {a.date} at {a.time} · {a.ownerEmail}
+                          {a.ownerPhone ? ` · ${a.ownerPhone}` : ""}
+                        </p>
+                      </div>
+                      <div className="flex gap-2 shrink-0" onClick={e => e.stopPropagation()}>
+                        {a.status === "pending" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            onClick={() => handleStatus(a.id, "confirmed")}
+                            disabled={loading}
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Confirm
+                          </Button>
+                        )}
+                        {a.status === "confirmed" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-green-600 border-green-200 hover:bg-green-50"
+                            onClick={() => handleStatus(a.id, "completed")}
+                            disabled={loading}
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Complete
+                          </Button>
+                        )}
+                        {a.status !== "cancelled" && a.status !== "completed" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                            onClick={() => handleCancel(a.id)}
+                            disabled={loading}
+                          >
+                            <XCircle className="h-3.5 w-3.5 mr-1" /> Cancel
+                          </Button>
                         )}
                       </div>
-                      <p className="text-sm text-slate-600">
-                        {a.petName} ({a.petType}) · {a.serviceName}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {a.date} at {a.time} · {a.ownerEmail}
-                        {a.ownerPhone ? ` · ${a.ownerPhone}` : ""}
-                      </p>
                     </div>
-                    <div className="flex gap-2 shrink-0" onClick={e => e.stopPropagation()}>
-                      {a.status === "pending" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                          onClick={() => handleStatus(a.id, "confirmed")}
-                          disabled={loading}
-                        >
-                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Confirm
-                        </Button>
-                      )}
-                      {a.status === "confirmed" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-green-600 border-green-200 hover:bg-green-50"
-                          onClick={() => handleStatus(a.id, "completed")}
-                          disabled={loading}
-                        >
-                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Complete
-                        </Button>
-                      )}
-                      {a.status !== "cancelled" && a.status !== "completed" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-red-600 border-red-200 hover:bg-red-50"
-                          onClick={() => handleCancel(a.id)}
-                          disabled={loading}
-                        >
-                          <XCircle className="h-3.5 w-3.5 mr-1" /> Cancel
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ---- Right: Staff Notepad ---- */}
+        <div className="hidden lg:flex flex-col w-72 xl:w-80 shrink-0 sticky top-8" style={{ maxHeight: "calc(100vh - 4rem)" }}>
+          <StaffNotepad />
+        </div>
       </div>
 
       <AppointmentDetailDialog
@@ -363,6 +568,7 @@ export default function AdminAppointments() {
         onConfirm={id => handleStatus(id, "confirmed")}
         onComplete={id => handleStatus(id, "completed")}
         onCancel={handleCancel}
+        onNotesSaved={invalidate}
         loading={loading}
       />
     </AdminLayout>
