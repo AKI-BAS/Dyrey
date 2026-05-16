@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 48" fill="none">
+  <rect width="40" height="40" x="4" y="4" rx="10" fill="hsl(205,70%,55%)"/>
+  <path d="M14 24c0-5.523 4.477-10 10-10h4a10 10 0 0 1 0 20h-4c-5.523 0-10-4.477-10-10Z" fill="white" opacity="0.9"/>
+  <circle cx="28" cy="18" r="3" fill="white"/>
+  <text x="52" y="32" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" fill="hsl(205,70%,55%)">Dýrey</text>
+</svg>

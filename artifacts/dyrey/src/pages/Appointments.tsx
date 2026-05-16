@@ -1,18 +1,50 @@
-import { useListAppointments, useCancelAppointment, getListAppointmentsQueryKey } from "@workspace/api-client-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useUser, useClerk } from "@clerk/react";
+import { useCancelAppointment } from "@workspace/api-client-react";
 import { format, parseISO } from "date-fns";
-import { CalendarDays, Clock, MoreHorizontal, FileText, Ban } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { CalendarDays, Clock, MoreHorizontal, FileText, Ban, LogIn, Lock } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+interface Appointment {
+  id: number;
+  petName: string;
+  petType: string;
+  serviceName: string;
+  date: string;
+  time: string;
+  status: string;
+  notes: string | null;
+  customDescription: string | null;
+  customerName: string;
+  customerEmail: string;
+  createdAt: string;
+}
+
+function useMyAppointments(enabled: boolean) {
+  return useQuery<Appointment[]>({
+    queryKey: ["me", "appointments"],
+    queryFn: async () => {
+      const res = await fetch(`${basePath}/api/me/appointments`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch appointments");
+      return res.json();
+    },
+    enabled,
+  });
+}
+
 export default function Appointments() {
-  const { data: appointments, isLoading } = useListAppointments();
+  const { user, isLoaded } = useUser();
+  const { openSignIn } = useClerk();
+  const { data: appointments, isLoading } = useMyAppointments(isLoaded && !!user);
   const cancelAppointment = useCancelAppointment();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -20,29 +52,46 @@ export default function Appointments() {
   const handleCancel = async (id: number) => {
     try {
       await cancelAppointment.mutateAsync({ id });
-      toast({
-        title: "Appointment cancelled",
-        description: "Your appointment has been successfully cancelled.",
-      });
-      queryClient.invalidateQueries({ queryKey: getListAppointmentsQueryKey() });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to cancel appointment.",
-        variant: "destructive",
-      });
+      toast({ title: "Appointment cancelled", description: "Your appointment has been successfully cancelled." });
+      queryClient.invalidateQueries({ queryKey: ["me", "appointments"] });
+    } catch {
+      toast({ title: "Error", description: "Failed to cancel appointment.", variant: "destructive" });
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'pending': return 'bg-amber-100 text-amber-800 border-amber-200';
-      case 'completed': return 'bg-green-100 text-green-800 border-green-200';
-      case 'cancelled': return 'bg-slate-100 text-slate-800 border-slate-200';
-      default: return 'bg-slate-100 text-slate-800 border-slate-200';
+      case "confirmed": return "bg-blue-100 text-blue-800 border-blue-200";
+      case "pending": return "bg-amber-100 text-amber-800 border-amber-200";
+      case "completed": return "bg-green-100 text-green-800 border-green-200";
+      case "cancelled": return "bg-slate-100 text-slate-800 border-slate-200";
+      default: return "bg-slate-100 text-slate-800 border-slate-200";
     }
   };
+
+  if (isLoaded && !user) {
+    return (
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+            <Lock className="h-8 w-8 text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold mb-3">Sign in to view your appointments</h1>
+          <p className="text-muted-foreground max-w-sm mb-8">
+            Create a free account or sign in to book appointments and track your pet's vet visits.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button onClick={() => openSignIn()} className="gap-2">
+              <LogIn className="h-4 w-4" /> Sign In
+            </Button>
+            <Link href="/book">
+              <Button variant="outline">Book as Guest</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
@@ -56,7 +105,7 @@ export default function Appointments() {
         </Link>
       </div>
 
-      {isLoading ? (
+      {isLoading || !isLoaded ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <Card key={i} className="shadow-sm">
@@ -105,9 +154,9 @@ export default function Appointments() {
                     </Badge>
                   </div>
                 </div>
-                
+
                 <div className="p-6 flex-1 flex flex-col justify-center relative">
-                  {(apt.status === 'pending' || apt.status === 'confirmed') && (
+                  {(apt.status === "pending" || apt.status === "confirmed") && (
                     <div className="absolute top-4 right-4">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -142,9 +191,11 @@ export default function Appointments() {
                     </div>
                   )}
 
-                  <h3 className="text-xl font-bold mb-1">{apt.petName} <span className="text-muted-foreground font-normal text-base">({apt.petType})</span></h3>
+                  <h3 className="text-xl font-bold mb-1">
+                    {apt.petName} <span className="text-muted-foreground font-normal text-base">({apt.petType})</span>
+                  </h3>
                   <p className="text-slate-700 font-medium mb-4">{apt.serviceName}</p>
-                  
+
                   {apt.notes && (
                     <div className="flex items-start gap-2 text-sm text-muted-foreground bg-slate-50/50 p-3 rounded-md">
                       <FileText className="h-4 w-4 mt-0.5 shrink-0" />
