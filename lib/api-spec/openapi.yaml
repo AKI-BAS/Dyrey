@@ -668,6 +668,8 @@ components:
           type: boolean
         stockCount:
           type: integer
+        discountPercent:
+          type: integer
 
     ProductInput:
       type: object
@@ -689,6 +691,8 @@ components:
           type: boolean
         stockCount:
           type: integer
+        discountPercent:
+          type: integer
 
     ProductUpdate:
       type: object
@@ -708,6 +712,8 @@ components:
         featured:
           type: boolean
         stockCount:
+          type: integer
+        discountPercent:
           type: integer
 
     ProductCategory:

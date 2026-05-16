@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
-import { ShoppingCart, Menu, Home, Package, CalendarDays, CalendarIcon, LogIn, LogOut, User, ChevronDown, PawPrint } from "lucide-react";
-import { useState } from "react";
+import { ShoppingCart, Menu, Home, Package, CalendarDays, CalendarIcon, LogIn, LogOut, User, ChevronDown, PawPrint, X, Bell } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useClerk, useUser } from "@clerk/react";
 import logoPath from "@assets/image_1778924453421.png";
 import { useCart } from "@/hooks/use-cart";
@@ -9,14 +9,61 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+const NOTIF_STYLES: Record<string, { bg: string; text: string; border: string }> = {
+  info:     { bg: "bg-blue-600",    text: "text-white",     border: "border-blue-700" },
+  discount: { bg: "bg-emerald-600", text: "text-white",     border: "border-emerald-700" },
+  warning:  { bg: "bg-amber-500",   text: "text-white",     border: "border-amber-600" },
+  urgent:   { bg: "bg-red-600",     text: "text-white",     border: "border-red-700" },
+};
+
+interface SiteNotification { id: number; message: string; type: string; expiresAt: string | null }
+
+function SiteNotificationBanner() {
+  const [notif, setNotif] = useState<SiteNotification | null>(null);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    const key = "dyrey_dismissed_notifs";
+    const dismissedIds: number[] = JSON.parse(localStorage.getItem(key) ?? "[]");
+    fetch(`${basePath}/api/site-notifications`)
+      .then(r => r.json())
+      .then((rows: SiteNotification[]) => {
+        const active = rows.filter(r => !dismissedIds.includes(r.id));
+        if (active.length > 0) setNotif(active[0]);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleDismiss = () => {
+    if (!notif) return;
+    const key = "dyrey_dismissed_notifs";
+    const dismissedIds: number[] = JSON.parse(localStorage.getItem(key) ?? "[]");
+    localStorage.setItem(key, JSON.stringify([...dismissedIds, notif.id]));
+    setDismissed(true);
+  };
+
+  if (!notif || dismissed) return null;
+
+  const style = NOTIF_STYLES[notif.type] ?? NOTIF_STYLES.info;
+
+  return (
+    <div className={`${style.bg} ${style.text} border-b ${style.border}`}>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center gap-3">
+        <Bell className="h-4 w-4 shrink-0 opacity-80" />
+        <p className="flex-1 text-sm font-medium text-center">{notif.message}</p>
+        <button onClick={handleDismiss} className="shrink-0 opacity-70 hover:opacity-100 transition-opacity ml-auto">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function LanguageToggle() {
   const { lang, setLang } = useLanguage();
@@ -61,7 +108,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const UserSection = () => {
     if (!isLoaded) return null;
-
     if (!user) {
       return (
         <Link href="/sign-in">
@@ -72,7 +118,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </Link>
       );
     }
-
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -122,6 +167,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground font-sans">
+      {/* Site notification banner (above header) */}
+      <SiteNotificationBanner />
+
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-20 items-center justify-between">
@@ -144,9 +192,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                           href={item.href}
                           onClick={() => setMobileOpen(false)}
                           className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                            location === item.href
-                              ? "bg-primary text-primary-foreground"
-                              : "hover:bg-muted"
+                            location === item.href ? "bg-primary text-primary-foreground" : "hover:bg-muted"
                           }`}
                         >
                           <Icon className="h-4 w-4" />
@@ -241,11 +287,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <img src={logoPath} alt="Dýrey Logo" className="h-10 w-auto grayscale opacity-70" />
                 <span className="font-semibold text-muted-foreground">Dýrey</span>
               </div>
-              <p className="text-sm text-muted-foreground">
-                {t("footer_tagline")}
-              </p>
+              <p className="text-sm text-muted-foreground">{t("footer_tagline")}</p>
             </div>
-
             <div>
               <h3 className="font-medium mb-4">{t("footer_clinic")}</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
@@ -255,7 +298,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <li>{t("footer_ourTeam")}</li>
               </ul>
             </div>
-
             <div>
               <h3 className="font-medium mb-4">{t("footer_shop")}</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
@@ -265,7 +307,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <li>{t("footer_shipping")}</li>
               </ul>
             </div>
-
             <div>
               <h3 className="font-medium mb-4">{t("footer_contact")}</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
@@ -276,7 +317,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </ul>
             </div>
           </div>
-
           <div className="mt-12 pt-8 border-t text-center text-sm text-muted-foreground flex flex-col sm:flex-row justify-between items-center gap-4">
             <p>&copy; {new Date().getFullYear()} Dýralæknaþjónusta Eyjafjarðar ehf. {t("footer_rights")}</p>
             <div className="flex gap-4">

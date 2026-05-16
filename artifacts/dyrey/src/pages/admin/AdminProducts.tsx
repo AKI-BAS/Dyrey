@@ -22,6 +22,7 @@ type ProductForm = {
   inStock: boolean;
   featured: boolean;
   stockCount: number;
+  discountPercent: number;
 };
 
 const EMPTY: ProductForm = {
@@ -33,6 +34,7 @@ const EMPTY: ProductForm = {
   inStock: true,
   featured: false,
   stockCount: 0,
+  discountPercent: 0,
 };
 
 async function uploadImage(file: File): Promise<string> {
@@ -94,6 +96,7 @@ export default function AdminProducts() {
       inStock: p.inStock,
       featured: p.featured,
       stockCount: p.stockCount ?? 0,
+      discountPercent: p.discountPercent ?? 0,
     });
     setNewCategory("");
     setDialogOpen(true);
@@ -192,9 +195,21 @@ export default function AdminProducts() {
                         <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{p.category}</span>
                         {p.featured && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Featured</span>}
                         {!p.inStock && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Out of stock</span>}
+                        {(p.discountPercent ?? 0) > 0 && (
+                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">-{p.discountPercent}% off</span>
+                        )}
                       </div>
                       <p className="text-xs text-slate-500 truncate mt-0.5">{p.description}</p>
-                      <p className="text-sm font-medium mt-1">{p.price.toLocaleString()} kr.</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        {(p.discountPercent ?? 0) > 0 ? (
+                          <>
+                            <span className="text-sm font-bold text-red-600">{Math.round(p.price * (1 - (p.discountPercent ?? 0) / 100)).toLocaleString()} kr.</span>
+                            <span className="text-xs text-slate-400 line-through">{p.price.toLocaleString()} kr.</span>
+                          </>
+                        ) : (
+                          <p className="text-sm font-medium">{p.price.toLocaleString()} kr.</p>
+                        )}
+                      </div>
                     </div>
                     <div className="flex gap-2 shrink-0">
                       <Button size="icon" variant="ghost" onClick={() => openEdit(p)}>
@@ -300,6 +315,25 @@ export default function AdminProducts() {
                   className="mt-2"
                 />
               )}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Discount (%)</Label>
+              <div className="flex items-center gap-3">
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={form.discountPercent}
+                  onChange={e => setForm(f => ({ ...f, discountPercent: Math.max(0, Math.min(100, Number(e.target.value))) }))}
+                  className="w-28"
+                />
+                {form.discountPercent > 0 && form.price > 0 && (
+                  <p className="text-sm text-slate-500">
+                    Sale price: <span className="font-semibold text-red-600">{Math.round(form.price * (1 - form.discountPercent / 100)).toLocaleString()} kr.</span>
+                  </p>
+                )}
+              </div>
+              <p className="text-xs text-slate-400">Set 0 for no discount. Shown as a badge on the product in the shop.</p>
             </div>
             <div className="flex items-center justify-between">
               <Label>In Stock</Label>

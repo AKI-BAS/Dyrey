@@ -216,7 +216,8 @@ export const ListProductsResponseItem = zod.object({
   "imageUrl": zod.string().nullish(),
   "inStock": zod.boolean(),
   "featured": zod.boolean(),
-  "stockCount": zod.number().optional()
+  "stockCount": zod.number().optional(),
+  "discountPercent": zod.number().optional()
 })
 export const ListProductsResponse = zod.array(ListProductsResponseItem)
 
@@ -232,7 +233,8 @@ export const CreateProductBody = zod.object({
   "imageUrl": zod.string().optional(),
   "inStock": zod.boolean().optional(),
   "featured": zod.boolean().optional(),
-  "stockCount": zod.number().optional()
+  "stockCount": zod.number().optional(),
+  "discountPercent": zod.number().optional()
 })
 
 
@@ -248,7 +250,8 @@ export const ListFeaturedProductsResponseItem = zod.object({
   "imageUrl": zod.string().nullish(),
   "inStock": zod.boolean(),
   "featured": zod.boolean(),
-  "stockCount": zod.number().optional()
+  "stockCount": zod.number().optional(),
+  "discountPercent": zod.number().optional()
 })
 export const ListFeaturedProductsResponse = zod.array(ListFeaturedProductsResponseItem)
 
@@ -279,7 +282,8 @@ export const GetProductResponse = zod.object({
   "imageUrl": zod.string().nullish(),
   "inStock": zod.boolean(),
   "featured": zod.boolean(),
-  "stockCount": zod.number().optional()
+  "stockCount": zod.number().optional(),
+  "discountPercent": zod.number().optional()
 })
 
 
@@ -298,7 +302,8 @@ export const UpdateProductBody = zod.object({
   "imageUrl": zod.string().optional(),
   "inStock": zod.boolean().optional(),
   "featured": zod.boolean().optional(),
-  "stockCount": zod.number().optional()
+  "stockCount": zod.number().optional(),
+  "discountPercent": zod.number().optional()
 })
 
 export const UpdateProductResponse = zod.object({
@@ -310,7 +315,8 @@ export const UpdateProductResponse = zod.object({
   "imageUrl": zod.string().nullish(),
   "inStock": zod.boolean(),
   "featured": zod.boolean(),
-  "stockCount": zod.number().optional()
+  "stockCount": zod.number().optional(),
+  "discountPercent": zod.number().optional()
 })
 
 

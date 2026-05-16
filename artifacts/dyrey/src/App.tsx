@@ -26,6 +26,7 @@ import AdminAppointments from "@/pages/admin/AdminAppointments";
 import AdminProducts from "@/pages/admin/AdminProducts";
 import AdminServices from "@/pages/admin/AdminServices";
 import AdminOrders from "@/pages/admin/AdminOrders";
+import AdminContent from "@/pages/admin/AdminContent";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -204,6 +205,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/admin/products" component={AdminProducts} />
             <Route path="/admin/services" component={AdminServices} />
             <Route path="/admin/orders" component={AdminOrders} />
+            <Route path="/admin/content" component={AdminContent} />
 
             {/* All other public routes wrapped in Layout */}
             <Route component={PublicRouter} />

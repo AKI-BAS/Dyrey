@@ -12,6 +12,7 @@ export const productsTable = pgTable("products", {
   inStock: boolean("in_stock").notNull().default(true),
   featured: boolean("featured").notNull().default(false),
   stockCount: integer("stock_count").notNull().default(0),
+  discountPercent: integer("discount_percent").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

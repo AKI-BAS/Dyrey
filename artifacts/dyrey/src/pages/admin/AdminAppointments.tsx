@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   useListAppointments,
   useUpdateAppointment,
@@ -18,9 +18,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Separator } from "@/components/ui/separator";
 import {
   CheckCircle2, XCircle, Search, Phone, Mail, CalendarDays, Clock,
-  MessageSquare, PawPrint, AlertCircle, NotebookPen, Save, Loader2,
-  RefreshCw,
+  MessageSquare, PawPrint, AlertCircle, Loader2, Save,
 } from "lucide-react";
+import { StaffNotepad } from "@/components/StaffNotepad";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO, formatDistanceToNow } from "date-fns";
 
@@ -37,133 +37,6 @@ const STATUS_COLORS: Record<string, string> = {
   completed: "bg-green-100 text-green-800 border-green-200",
   cancelled: "bg-red-100 text-red-800 border-red-200",
 };
-
-// ---------------------------------------------------------------------------
-// Staff Notepad
-// ---------------------------------------------------------------------------
-
-type SaveState = "idle" | "saving" | "saved" | "error";
-
-function StaffNotepad() {
-  const [content, setContent] = useState("");
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [saveState, setSaveState] = useState<SaveState>("idle");
-  const [loaded, setLoaded] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Load notepad content
-  useEffect(() => {
-    fetch(`${basePath}/api/admin/notepad`, { headers: adminHeaders() })
-      .then(r => r.json())
-      .then(data => {
-        setContent(data.content ?? "");
-        if (data.updatedAt) setLastSaved(new Date(data.updatedAt));
-        setLoaded(true);
-      })
-      .catch(() => setLoaded(true));
-  }, []);
-
-  const save = useCallback(async (text: string) => {
-    setSaveState("saving");
-    try {
-      const r = await fetch(`${basePath}/api/admin/notepad`, {
-        method: "PUT",
-        headers: adminHeaders(),
-        body: JSON.stringify({ content: text }),
-      });
-      const data = await r.json();
-      setLastSaved(new Date(data.updatedAt));
-      setSaveState("saved");
-      setTimeout(() => setSaveState("idle"), 2000);
-    } catch {
-      setSaveState("error");
-    }
-  }, []);
-
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const val = e.target.value;
-    setContent(val);
-    setSaveState("idle");
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => save(val), 1500);
-  };
-
-  const handleManualSave = () => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    save(content);
-  };
-
-  return (
-    <Card className="border-slate-200 shadow-sm flex flex-col h-full">
-      <CardHeader className="pb-3 pt-4 px-4 border-b border-slate-100">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 bg-amber-100 rounded-md flex items-center justify-center">
-              <NotebookPen className="h-3.5 w-3.5 text-amber-700" />
-            </div>
-            <div>
-              <p className="font-semibold text-sm text-slate-800">Staff Notepad</p>
-              <p className="text-xs text-slate-400">Shared with all staff</p>
-            </div>
-          </div>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7 text-slate-400 hover:text-slate-700"
-            onClick={handleManualSave}
-            title="Save now"
-            disabled={saveState === "saving"}
-          >
-            {saveState === "saving" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Save className="h-3.5 w-3.5" />
-            )}
-          </Button>
-        </div>
-      </CardHeader>
-
-      <CardContent className="flex-1 flex flex-col p-0 min-h-0">
-        {!loaded ? (
-          <div className="flex items-center justify-center flex-1 text-slate-400">
-            <Loader2 className="h-4 w-4 animate-spin" />
-          </div>
-        ) : (
-          <Textarea
-            value={content}
-            onChange={handleChange}
-            placeholder={"Tasks for today, important updates, reminders for the team...\n\n• Patient arriving at 10:00 needs sedation pre-auth\n• Dr. Sigríður on call from 14:00\n• Fridge temp check due Friday"}
-            className="flex-1 border-0 rounded-none resize-none text-sm text-slate-700 placeholder:text-slate-300 focus-visible:ring-0 p-4 min-h-[280px] bg-transparent"
-          />
-        )}
-      </CardContent>
-
-      <div className="px-4 py-2.5 border-t border-slate-100 flex items-center gap-2">
-        {saveState === "saving" && (
-          <span className="text-xs text-slate-400 flex items-center gap-1">
-            <Loader2 className="h-3 w-3 animate-spin" /> Saving…
-          </span>
-        )}
-        {saveState === "saved" && (
-          <span className="text-xs text-green-600 flex items-center gap-1">
-            <CheckCircle2 className="h-3 w-3" /> Saved
-          </span>
-        )}
-        {saveState === "error" && (
-          <span className="text-xs text-red-500">Failed to save</span>
-        )}
-        {saveState === "idle" && lastSaved && (
-          <span className="text-xs text-slate-400">
-            Saved {formatDistanceToNow(lastSaved, { addSuffix: true })}
-          </span>
-        )}
-        {saveState === "idle" && !lastSaved && (
-          <span className="text-xs text-slate-300">Not yet saved</span>
-        )}
-      </div>
-    </Card>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Appointment Detail Dialog

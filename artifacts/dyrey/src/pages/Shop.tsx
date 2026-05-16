@@ -2,13 +2,12 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { useListProducts, useListProductCategories } from "@workspace/api-client-react";
 import { useT } from "@/hooks/use-language";
-import { Search, Package, Filter, X } from "lucide-react";
+import { Search, Package, Filter, X, Tag } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 export default function Shop() {
@@ -16,14 +15,10 @@ export default function Shop() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string | undefined>(undefined);
 
-  const { data: products, isLoading: loadingProducts } = useListProducts(
-    { search: search || undefined, category }
-  );
+  const { data: products, isLoading: loadingProducts } = useListProducts({ search: search || undefined, category });
   const { data: categories, isLoading: loadingCategories } = useListProductCategories();
 
-  const handleCategoryClick = (cat: string | undefined) => {
-    setCategory(cat === category ? undefined : cat);
-  };
+  const handleCategoryClick = (cat: string | undefined) => setCategory(cat === category ? undefined : cat);
 
   const SidebarContent = () => (
     <div className="space-y-6">
@@ -37,20 +32,11 @@ export default function Shop() {
           </div>
         ) : (
           <div className="space-y-1">
-            <Button
-              variant={category === undefined ? "secondary" : "ghost"}
-              className="w-full justify-start font-normal"
-              onClick={() => handleCategoryClick(undefined)}
-            >
+            <Button variant={category === undefined ? "secondary" : "ghost"} className="w-full justify-start font-normal" onClick={() => handleCategoryClick(undefined)}>
               {t("shop_allProducts")}
             </Button>
             {categories?.map((cat) => (
-              <Button
-                key={cat.name}
-                variant={category === cat.name ? "secondary" : "ghost"}
-                className="w-full justify-start font-normal flex justify-between"
-                onClick={() => handleCategoryClick(cat.name)}
-              >
+              <Button key={cat.name} variant={category === cat.name ? "secondary" : "ghost"} className="w-full justify-start font-normal flex justify-between" onClick={() => handleCategoryClick(cat.name)}>
                 <span>{cat.name}</span>
                 <Badge variant="outline" className="ml-auto bg-background">{cat.count}</Badge>
               </Button>
@@ -69,34 +55,21 @@ export default function Shop() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-8">
-        {/* Desktop Sidebar */}
         <aside className="hidden md:block w-64 shrink-0">
-          <div className="sticky top-24">
-            <SidebarContent />
-          </div>
+          <div className="sticky top-24"><SidebarContent /></div>
         </aside>
 
-        {/* Main Content */}
         <div className="flex-1 min-w-0">
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t("shop_search")}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
+              <Input placeholder={t("shop_search")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
               {search && (
-                <button
-                  onClick={() => setSearch("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
+                <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                   <X className="h-4 w-4" />
                 </button>
               )}
             </div>
-
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="outline" className="md:hidden w-full sm:w-auto">
@@ -105,12 +78,8 @@ export default function Shop() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left">
-                <SheetHeader>
-                  <SheetTitle>{t("shop_filters")}</SheetTitle>
-                </SheetHeader>
-                <div className="mt-6">
-                  <SidebarContent />
-                </div>
+                <SheetHeader><SheetTitle>{t("shop_filters")}</SheetTitle></SheetHeader>
+                <div className="mt-6"><SidebarContent /></div>
               </SheetContent>
             </Sheet>
           </div>
@@ -134,35 +103,54 @@ export default function Shop() {
                 <p className="text-muted-foreground">{t("shop_noProducts_desc")}</p>
               </div>
             ) : (
-              products?.map((product) => (
-                <Link key={product.id} href={`/shop/${product.id}`}>
-                  <Card className="overflow-hidden border-none shadow-sm hover:shadow-md transition-all group h-full flex flex-col cursor-pointer bg-slate-50/50 dark:bg-slate-900/50">
-                    <div className="aspect-square relative overflow-hidden bg-white p-6">
-                      {product.imageUrl ? (
-                        <img
-                          src={product.imageUrl}
-                          alt={product.name}
-                          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-slate-100 rounded-md text-slate-400">
-                          <Package className="h-12 w-12 opacity-50" />
-                        </div>
-                      )}
-                      {!product.inStock && (
-                        <div className="absolute top-2 right-2 bg-destructive text-destructive-foreground text-xs font-semibold px-2 py-1 rounded">
-                          {t("shop_outOfStock")}
-                        </div>
-                      )}
-                    </div>
-                    <CardContent className="p-4 flex-1 flex flex-col">
-                      <div className="text-xs text-primary font-medium mb-1">{product.category}</div>
-                      <h3 className="font-medium text-base mb-2 line-clamp-2 flex-1">{product.name}</h3>
-                      <div className="font-semibold text-lg">{product.price.toLocaleString()} kr.</div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))
+              products?.map((product) => {
+                const hasDiscount = (product.discountPercent ?? 0) > 0;
+                const discountedPrice = hasDiscount
+                  ? product.price * (1 - (product.discountPercent ?? 0) / 100)
+                  : product.price;
+
+                return (
+                  <Link key={product.id} href={`/shop/${product.id}`}>
+                    <Card className={`overflow-hidden border-none shadow-sm hover:shadow-md transition-all group h-full flex flex-col cursor-pointer bg-slate-50/50 ${!product.inStock ? "opacity-75" : ""}`}>
+                      <div className="aspect-square relative overflow-hidden bg-white p-6">
+                        {product.imageUrl ? (
+                          <img src={product.imageUrl} alt={product.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-slate-100 rounded-md text-slate-400">
+                            <Package className="h-12 w-12 opacity-50" />
+                          </div>
+                        )}
+                        {/* Sold out banner */}
+                        {!product.inStock && (
+                          <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center">
+                            <div className="bg-slate-900 text-white text-sm font-bold px-4 py-1.5 rounded-md -rotate-12 shadow-lg tracking-wide">
+                              {t("shop_outOfStock")}
+                            </div>
+                          </div>
+                        )}
+                        {/* Discount badge */}
+                        {hasDiscount && product.inStock && (
+                          <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1">
+                            <Tag className="h-3 w-3" /> -{product.discountPercent}%
+                          </div>
+                        )}
+                      </div>
+                      <CardContent className="p-4 flex-1 flex flex-col">
+                        <div className="text-xs text-primary font-medium mb-1">{product.category}</div>
+                        <h3 className="font-medium text-base mb-2 line-clamp-2 flex-1">{product.name}</h3>
+                        {hasDiscount ? (
+                          <div className="flex items-baseline gap-2">
+                            <span className="font-bold text-lg text-red-600">{Math.round(discountedPrice).toLocaleString()} kr.</span>
+                            <span className="text-sm text-muted-foreground line-through">{product.price.toLocaleString()} kr.</span>
+                          </div>
+                        ) : (
+                          <div className="font-semibold text-lg">{product.price.toLocaleString()} kr.</div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })
             )}
           </div>
         </div>

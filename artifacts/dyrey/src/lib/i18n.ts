@@ -164,6 +164,14 @@ export const translations = {
     product_returnShop: "Return to Shop",
     product_addedToCart: "Added to cart",
     product_addedDesc: "added to your cart.",
+    product_off: "off",
+    product_notifyTitle: "Notify me when back in stock",
+    product_notifyDesc: "Enter your email and we'll let you know when this product is available again.",
+    product_notifyPlaceholder: "your@email.com",
+    product_notifyBtn: "Notify Me",
+    product_notifyDone: "You're on the list!",
+    product_notifyDoneDesc: "We'll email you when this product is back in stock.",
+    product_notifyError: "Could not save your email. Please try again.",
 
     // Not found
     notfound_title: "Page Not Found",
@@ -364,6 +372,14 @@ export const translations = {
     product_returnShop: "Fara aftur í verslun",
     product_addedToCart: "Bætt í körfu",
     product_addedDesc: "bætt við í körfuna þína.",
+    product_off: "afsláttur",
+    product_notifyTitle: "Láttu mig vita þegar vara kemur",
+    product_notifyDesc: "Skráðu netfangið þitt og við látum þig vita þegar þessi vara er aftur til.",
+    product_notifyPlaceholder: "netfang@dæmi.is",
+    product_notifyBtn: "Láttu mig vita",
+    product_notifyDone: "Þú ert skráð/ur!",
+    product_notifyDoneDesc: "Við sendum þér tölvupóst þegar varan er aftur til.",
+    product_notifyError: "Tókst ekki að vista netfangið. Reyndu aftur.",
 
     // Not found
     notfound_title: "Síða ekki fundin",

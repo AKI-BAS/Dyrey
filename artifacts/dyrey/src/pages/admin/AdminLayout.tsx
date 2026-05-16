@@ -8,6 +8,7 @@ import {
   ShoppingBag,
   LogOut,
   Menu,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -19,6 +20,7 @@ const NAV = [
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/services", label: "Services", icon: Stethoscope },
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
+  { href: "/admin/content", label: "Edit Website", icon: Globe },
 ];
 
 function NavLinks({ onClick }: { onClick?: () => void }) {

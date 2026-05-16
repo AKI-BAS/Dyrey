@@ -96,6 +96,7 @@ export interface Product {
   inStock: boolean;
   featured: boolean;
   stockCount?: number;
+  discountPercent?: number;
 }
 
 export interface ProductInput {
@@ -107,6 +108,7 @@ export interface ProductInput {
   inStock?: boolean;
   featured?: boolean;
   stockCount?: number;
+  discountPercent?: number;
 }
 
 export interface ProductUpdate {
@@ -118,6 +120,7 @@ export interface ProductUpdate {
   inStock?: boolean;
   featured?: boolean;
   stockCount?: number;
+  discountPercent?: number;
 }
 
 export interface ProductCategory {
