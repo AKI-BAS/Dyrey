@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { ShoppingCart, Menu, Home, Package, CalendarDays, CalendarIcon, LogIn, LogOut, User, ChevronDown } from "lucide-react";
+import { ShoppingCart, Menu, Home, Package, CalendarDays, CalendarIcon, LogIn, LogOut, User, ChevronDown, PawPrint } from "lucide-react";
 import { useState } from "react";
 import { useClerk, useUser } from "@clerk/react";
 import logoPath from "@assets/image_1778924453421.png";
@@ -39,7 +39,7 @@ function LanguageToggle() {
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const [location, navigate] = useLocation();
+  const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const items = useCart((state) => state.items);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -97,6 +97,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
+            <Link href="/pets" className="cursor-pointer">
+              <PawPrint className="h-4 w-4 mr-2" /> {t("nav_myPets")}
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
             <Link href="/appointments" className="cursor-pointer">
               <CalendarDays className="h-4 w-4 mr-2" /> {t("nav_myAppointments")}
             </Link>
@@ -120,6 +125,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-20 items-center justify-between">
+            {/* Left: hamburger + logo */}
             <div className="flex items-center gap-3">
               <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
                 <SheetTrigger asChild>
@@ -148,8 +154,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         </Link>
                       );
                     })}
+                    {user && (
+                      <Link
+                        href="/pets"
+                        onClick={() => setMobileOpen(false)}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          location === "/pets" ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                        }`}
+                      >
+                        <PawPrint className="h-4 w-4" />
+                        {t("nav_myPets")}
+                      </Link>
+                    )}
                     <div className="border-t pt-4 mt-2 space-y-3">
-                      <LanguageToggle />
                       {user ? (
                         <button
                           onClick={() => { handleSignOut(); setMobileOpen(false); }}
@@ -175,10 +192,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <img src={logoPath} alt="Dýrey Logo" className="h-14 w-auto" />
                 <span className="font-bold text-xl tracking-tight hidden sm:inline-block">Dýrey</span>
               </Link>
-
-              <LanguageToggle />
             </div>
 
+            {/* Centre: desktop nav */}
             <nav className="hidden md:flex items-center gap-6">
               {navigation.map((item) => (
                 <Link
@@ -193,7 +209,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
               ))}
             </nav>
 
+            {/* Right: lang toggle + user + cart */}
             <div className="flex items-center gap-2">
+              <LanguageToggle />
               <UserSection />
               <Link href="/cart">
                 <Button variant="ghost" size="icon" className="relative">

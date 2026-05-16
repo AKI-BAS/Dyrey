@@ -16,6 +16,7 @@ import Cart from "@/pages/Cart";
 import BookAppointment from "@/pages/BookAppointment";
 import Appointments from "@/pages/Appointments";
 import Orders from "@/pages/Orders";
+import MyPets from "@/pages/MyPets";
 import NotFound from "@/pages/not-found";
 
 // Admin pages
@@ -155,6 +156,7 @@ function PublicRouter() {
         <Route path="/book" component={BookAppointment} />
         <Route path="/appointments" component={Appointments} />
         <Route path="/orders" component={Orders} />
+        <Route path="/pets" component={MyPets} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
