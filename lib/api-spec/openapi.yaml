@@ -9,22 +9,18 @@ servers:
     description: Base API path
 tags:
   - name: health
-    description: Health operations
   - name: appointments
-    description: Appointment booking operations
   - name: products
-    description: Shop product operations
   - name: orders
-    description: Order operations
   - name: services
-    description: Veterinary service operations
+  - name: admin
+  - name: storage
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -40,13 +36,72 @@ paths:
       summary: List veterinary services
       responses:
         "200":
-          description: List of vet services
+          description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: "#/components/schemas/VetService"
+    post:
+      operationId: createService
+      tags: [services, admin]
+      summary: Create a veterinary service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VetServiceInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VetService"
+
+  /services/{id}:
+    patch:
+      operationId: updateService
+      tags: [services, admin]
+      summary: Update a veterinary service
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VetServiceUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VetService"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteService
+      tags: [services, admin]
+      summary: Delete a veterinary service
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
 
   /appointments:
     get:
@@ -60,7 +115,7 @@ paths:
             type: string
       responses:
         "200":
-          description: List of appointments
+          description: OK
           content:
             application/json:
               schema:
@@ -79,7 +134,7 @@ paths:
               $ref: "#/components/schemas/AppointmentInput"
       responses:
         "201":
-          description: Appointment created
+          description: Created
           content:
             application/json:
               schema:
@@ -91,10 +146,10 @@ paths:
     get:
       operationId: getAppointmentsSummary
       tags: [appointments]
-      summary: Get appointments summary stats
+      summary: Appointments summary stats
       responses:
         "200":
-          description: Summary statistics
+          description: OK
           content:
             application/json:
               schema:
@@ -113,7 +168,7 @@ paths:
             type: integer
       responses:
         "200":
-          description: Appointment details
+          description: OK
           content:
             application/json:
               schema:
@@ -138,7 +193,7 @@ paths:
               $ref: "#/components/schemas/AppointmentUpdate"
       responses:
         "200":
-          description: Updated appointment
+          description: Updated
           content:
             application/json:
               schema:
@@ -163,7 +218,7 @@ paths:
     get:
       operationId: listProducts
       tags: [products]
-      summary: List shop products
+      summary: List products
       parameters:
         - in: query
           name: category
@@ -175,22 +230,39 @@ paths:
             type: string
       responses:
         "200":
-          description: List of products
+          description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: "#/components/schemas/Product"
+    post:
+      operationId: createProduct
+      tags: [products, admin]
+      summary: Create a product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
 
   /products/featured:
     get:
       operationId: listFeaturedProducts
       tags: [products]
-      summary: Get featured products for homepage
+      summary: Featured products
       responses:
         "200":
-          description: Featured products
+          description: OK
           content:
             application/json:
               schema:
@@ -202,10 +274,10 @@ paths:
     get:
       operationId: listProductCategories
       tags: [products]
-      summary: List product categories with counts
+      summary: Product categories
       responses:
         "200":
-          description: Product categories
+          description: OK
           content:
             application/json:
               schema:
@@ -226,11 +298,51 @@ paths:
             type: integer
       responses:
         "200":
-          description: Product details
+          description: OK
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Product"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateProduct
+      tags: [products, admin]
+      summary: Update a product
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteProduct
+      tags: [products, admin]
+      summary: Delete a product
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
         "404":
           description: Not found
 
@@ -241,7 +353,7 @@ paths:
       summary: List orders
       responses:
         "200":
-          description: List of orders
+          description: OK
           content:
             application/json:
               schema:
@@ -260,7 +372,7 @@ paths:
               $ref: "#/components/schemas/OrderInput"
       responses:
         "201":
-          description: Order placed
+          description: Created
           content:
             application/json:
               schema:
@@ -281,7 +393,32 @@ paths:
             type: integer
       responses:
         "200":
-          description: Order details
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateOrder
+      tags: [orders, admin]
+      summary: Update order status
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderUpdate"
+      responses:
+        "200":
+          description: Updated
           content:
             application/json:
               schema:
@@ -289,19 +426,90 @@ paths:
         "404":
           description: Not found
 
+  /admin/login:
+    post:
+      operationId: adminLogin
+      tags: [admin]
+      summary: Staff login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLoginResponse"
+        "401":
+          description: Invalid credentials
+
+  /admin/me:
+    get:
+      operationId: getAdminMe
+      tags: [admin]
+      summary: Check admin session
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+        "401":
+          description: Not authenticated
+
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a presigned upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestUploadUrlBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestUploadUrlResponse"
+
+  /storage/objects/{objectPath}:
+    get:
+      operationId: getStorageObject
+      tags: [storage]
+      summary: Serve an uploaded object
+      parameters:
+        - in: path
+          name: objectPath
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: File content
+        "404":
+          description: Not found
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
     VetService:
       type: object
-      required: [id, name, description, duration, price]
+      required: [id, name, description, duration, price, isActive, allowCustomDescription]
       properties:
         id:
           type: integer
@@ -311,9 +519,45 @@ components:
           type: string
         duration:
           type: integer
-          description: Duration in minutes
         price:
           type: number
+        isActive:
+          type: boolean
+        allowCustomDescription:
+          type: boolean
+
+    VetServiceInput:
+      type: object
+      required: [name, description, duration, price]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        duration:
+          type: integer
+        price:
+          type: number
+        isActive:
+          type: boolean
+        allowCustomDescription:
+          type: boolean
+
+    VetServiceUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        duration:
+          type: integer
+        price:
+          type: number
+        isActive:
+          type: boolean
+        allowCustomDescription:
+          type: boolean
 
     Appointment:
       type: object
@@ -341,8 +585,9 @@ components:
           type: string
         status:
           type: string
-          description: "pending | confirmed | completed | cancelled"
         notes:
+          type: ["string", "null"]
+        customDescription:
           type: ["string", "null"]
         createdAt:
           type: string
@@ -368,6 +613,8 @@ components:
         time:
           type: string
         notes:
+          type: string
+        customDescription:
           type: string
 
     AppointmentUpdate:
@@ -422,6 +669,47 @@ components:
         stockCount:
           type: integer
 
+    ProductInput:
+      type: object
+      required: [name, description, price, category]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        category:
+          type: string
+        imageUrl:
+          type: string
+        inStock:
+          type: boolean
+        featured:
+          type: boolean
+        stockCount:
+          type: integer
+
+    ProductUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        category:
+          type: string
+        imageUrl:
+          type: string
+        inStock:
+          type: boolean
+        featured:
+          type: boolean
+        stockCount:
+          type: integer
+
     ProductCategory:
       type: object
       required: [name, count]
@@ -464,7 +752,6 @@ components:
           type: number
         status:
           type: string
-          description: "pending | processing | shipped | delivered"
         createdAt:
           type: string
 
@@ -488,3 +775,52 @@ components:
                 type: integer
               quantity:
                 type: integer
+
+    OrderUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+
+    AdminLoginInput:
+      type: object
+      required: [password]
+      properties:
+        password:
+          type: string
+
+    AdminLoginResponse:
+      type: object
+      required: [success, token]
+      properties:
+        success:
+          type: boolean
+        token:
+          type: string
+
+    AdminSession:
+      type: object
+      required: [authenticated]
+      properties:
+        authenticated:
+          type: boolean
+
+    RequestUploadUrlBody:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+        size:
+          type: integer
+        contentType:
+          type: string
+
+    RequestUploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string

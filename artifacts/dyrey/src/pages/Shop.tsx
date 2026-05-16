@@ -15,8 +15,7 @@ export default function Shop() {
   const [category, setCategory] = useState<string | undefined>(undefined);
 
   const { data: products, isLoading: loadingProducts } = useListProducts(
-    { search: search || undefined, category },
-    { query: { keepPreviousData: true } }
+    { search: search || undefined, category }
   );
 
   const { data: categories, isLoading: loadingCategories } = useListProductCategories();

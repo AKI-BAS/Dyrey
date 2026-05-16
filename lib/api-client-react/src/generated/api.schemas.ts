@@ -13,9 +13,28 @@ export interface VetService {
   id: number;
   name: string;
   description: string;
-  /** Duration in minutes */
   duration: number;
   price: number;
+  isActive: boolean;
+  allowCustomDescription: boolean;
+}
+
+export interface VetServiceInput {
+  name: string;
+  description: string;
+  duration: number;
+  price: number;
+  isActive?: boolean;
+  allowCustomDescription?: boolean;
+}
+
+export interface VetServiceUpdate {
+  name?: string;
+  description?: string;
+  duration?: number;
+  price?: number;
+  isActive?: boolean;
+  allowCustomDescription?: boolean;
 }
 
 export interface Appointment {
@@ -29,10 +48,11 @@ export interface Appointment {
   serviceName: string;
   date: string;
   time: string;
-  /** pending | confirmed | completed | cancelled */
   status: string;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  customDescription?: string | null;
   createdAt: string;
 }
 
@@ -46,6 +66,7 @@ export interface AppointmentInput {
   date: string;
   time: string;
   notes?: string;
+  customDescription?: string;
 }
 
 export interface AppointmentUpdate {
@@ -77,6 +98,28 @@ export interface Product {
   stockCount?: number;
 }
 
+export interface ProductInput {
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  imageUrl?: string;
+  inStock?: boolean;
+  featured?: boolean;
+  stockCount?: number;
+}
+
+export interface ProductUpdate {
+  name?: string;
+  description?: string;
+  price?: number;
+  category?: string;
+  imageUrl?: string;
+  inStock?: boolean;
+  featured?: boolean;
+  stockCount?: number;
+}
+
 export interface ProductCategory {
   name: string;
   count: number;
@@ -97,7 +140,6 @@ export interface Order {
   customerPhone?: string | null;
   items: OrderItem[];
   totalAmount: number;
-  /** pending | processing | shipped | delivered */
   status: string;
   createdAt: string;
 }
@@ -112,6 +154,34 @@ export interface OrderInput {
   customerEmail: string;
   customerPhone?: string;
   items: OrderInputItemsItem[];
+}
+
+export interface OrderUpdate {
+  status?: string;
+}
+
+export interface AdminLoginInput {
+  password: string;
+}
+
+export interface AdminLoginResponse {
+  success: boolean;
+  token: string;
+}
+
+export interface AdminSession {
+  authenticated: boolean;
+}
+
+export interface RequestUploadUrlBody {
+  name: string;
+  size: number;
+  contentType: string;
+}
+
+export interface RequestUploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
 }
 
 export type ListAppointmentsParams = {

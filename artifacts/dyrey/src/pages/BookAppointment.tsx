@@ -9,7 +9,7 @@ import { useCreateAppointment, useListServices } from "@workspace/api-client-rea
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
@@ -27,6 +27,7 @@ const formSchema = z.object({
   date: z.date({ required_error: "A date is required" }),
   time: z.string().min(1, "A time is required"),
   notes: z.string().optional(),
+  customDescription: z.string().optional(),
 });
 
 const TIME_SLOTS = [
@@ -49,19 +50,32 @@ export default function BookAppointment() {
       petName: "",
       petType: "",
       notes: "",
+      customDescription: "",
     },
   });
+
+  const selectedServiceId = form.watch("serviceId");
+  const selectedService = services?.find(s => s.id === selectedServiceId);
+  const needsDescription = selectedService?.allowCustomDescription === true;
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       await createAppointment.mutateAsync({
         data: {
-          ...values,
+          ownerName: values.ownerName,
+          ownerEmail: values.ownerEmail,
+          ownerPhone: values.ownerPhone,
+          petName: values.petName,
+          petType: values.petType,
+          serviceId: values.serviceId,
           date: format(values.date, "yyyy-MM-dd"),
+          time: values.time,
+          notes: values.notes || undefined,
+          customDescription: values.customDescription || undefined,
         },
       });
       setIsSuccess(true);
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to book appointment. Please try again.",
@@ -147,8 +161,8 @@ export default function BookAppointment() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Reason for visit</FormLabel>
-                        <Select 
-                          disabled={loadingServices} 
+                        <Select
+                          disabled={loadingServices}
                           onValueChange={(val) => field.onChange(Number(val))}
                         >
                           <FormControl>
@@ -157,9 +171,9 @@ export default function BookAppointment() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {services?.map((service) => (
+                            {services?.filter(s => s.isActive).map((service) => (
                               <SelectItem key={service.id} value={service.id.toString()}>
-                                {service.name} ({service.duration} min) - {service.price.toLocaleString()} kr.
+                                {service.name} ({service.duration} min) — {service.price.toLocaleString()} kr.
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -168,6 +182,26 @@ export default function BookAppointment() {
                       </FormItem>
                     )}
                   />
+                  {needsDescription && (
+                    <FormField
+                      control={form.control}
+                      name="customDescription"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Please describe the reason for your visit</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Describe your pet's symptoms or what you'd like to discuss..."
+                              className="resize-none"
+                              rows={3}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </div>
 
                 {/* Date & Time */}
@@ -190,11 +224,7 @@ export default function BookAppointment() {
                                     !field.value && "text-muted-foreground"
                                   )}
                                 >
-                                  {field.value ? (
-                                    format(field.value, "PPP")
-                                  ) : (
-                                    <span>Pick a date</span>
-                                  )}
+                                  {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                 </Button>
                               </FormControl>
@@ -205,7 +235,9 @@ export default function BookAppointment() {
                                 selected={field.value}
                                 onSelect={field.onChange}
                                 disabled={(date) =>
-                                  date < new Date(new Date().setHours(0, 0, 0, 0)) || date.getDay() === 0 || date.getDay() === 6
+                                  date < new Date(new Date().setHours(0, 0, 0, 0)) ||
+                                  date.getDay() === 0 ||
+                                  date.getDay() === 6
                                 }
                                 initialFocus
                               />
@@ -215,7 +247,6 @@ export default function BookAppointment() {
                         </FormItem>
                       )}
                     />
-
                     <FormField
                       control={form.control}
                       name="time"
@@ -293,12 +324,12 @@ export default function BookAppointment() {
                       name="notes"
                       render={({ field }) => (
                         <FormItem className="md:col-span-2">
-                          <FormLabel>Additional Notes</FormLabel>
+                          <FormLabel>Additional Notes <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
                           <FormControl>
-                            <Textarea 
-                              placeholder="Any specific symptoms or questions?" 
-                              className="resize-none" 
-                              {...field} 
+                            <Textarea
+                              placeholder="Any specific symptoms or questions?"
+                              className="resize-none"
+                              {...field}
                             />
                           </FormControl>
                           <FormMessage />

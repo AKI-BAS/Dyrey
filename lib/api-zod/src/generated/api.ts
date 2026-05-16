@@ -7,9 +7,7 @@
  */
 import * as zod from 'zod';
 
-
 /**
- * Returns server health status
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -24,10 +22,60 @@ export const ListServicesResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "description": zod.string(),
-  "duration": zod.number().describe('Duration in minutes'),
-  "price": zod.number()
+  "duration": zod.number(),
+  "price": zod.number(),
+  "isActive": zod.boolean(),
+  "allowCustomDescription": zod.boolean()
 })
 export const ListServicesResponse = zod.array(ListServicesResponseItem)
+
+
+/**
+ * @summary Create a veterinary service
+ */
+export const CreateServiceBody = zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "duration": zod.number(),
+  "price": zod.number(),
+  "isActive": zod.boolean().optional(),
+  "allowCustomDescription": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Update a veterinary service
+ */
+export const UpdateServiceParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateServiceBody = zod.object({
+  "name": zod.string().optional(),
+  "description": zod.string().optional(),
+  "duration": zod.number().optional(),
+  "price": zod.number().optional(),
+  "isActive": zod.boolean().optional(),
+  "allowCustomDescription": zod.boolean().optional()
+})
+
+export const UpdateServiceResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "duration": zod.number(),
+  "price": zod.number(),
+  "isActive": zod.boolean(),
+  "allowCustomDescription": zod.boolean()
+})
+
+
+/**
+ * @summary Delete a veterinary service
+ */
+export const DeleteServiceParams = zod.object({
+  "id": zod.coerce.number()
+})
 
 
 /**
@@ -48,8 +96,9 @@ export const ListAppointmentsResponseItem = zod.object({
   "serviceName": zod.string(),
   "date": zod.string(),
   "time": zod.string(),
-  "status": zod.string().describe('pending | confirmed | completed | cancelled'),
+  "status": zod.string(),
   "notes": zod.string().nullish(),
+  "customDescription": zod.string().nullish(),
   "createdAt": zod.string()
 })
 export const ListAppointmentsResponse = zod.array(ListAppointmentsResponseItem)
@@ -67,12 +116,13 @@ export const CreateAppointmentBody = zod.object({
   "serviceId": zod.number(),
   "date": zod.string(),
   "time": zod.string(),
-  "notes": zod.string().optional()
+  "notes": zod.string().optional(),
+  "customDescription": zod.string().optional()
 })
 
 
 /**
- * @summary Get appointments summary stats
+ * @summary Appointments summary stats
  */
 export const GetAppointmentsSummaryResponse = zod.object({
   "total": zod.number(),
@@ -102,8 +152,9 @@ export const GetAppointmentResponse = zod.object({
   "serviceName": zod.string(),
   "date": zod.string(),
   "time": zod.string(),
-  "status": zod.string().describe('pending | confirmed | completed | cancelled'),
+  "status": zod.string(),
   "notes": zod.string().nullish(),
+  "customDescription": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -133,8 +184,9 @@ export const UpdateAppointmentResponse = zod.object({
   "serviceName": zod.string(),
   "date": zod.string(),
   "time": zod.string(),
-  "status": zod.string().describe('pending | confirmed | completed | cancelled'),
+  "status": zod.string(),
   "notes": zod.string().nullish(),
+  "customDescription": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -148,7 +200,7 @@ export const CancelAppointmentParams = zod.object({
 
 
 /**
- * @summary List shop products
+ * @summary List products
  */
 export const ListProductsQueryParams = zod.object({
   "category": zod.coerce.string().optional(),
@@ -170,7 +222,22 @@ export const ListProductsResponse = zod.array(ListProductsResponseItem)
 
 
 /**
- * @summary Get featured products for homepage
+ * @summary Create a product
+ */
+export const CreateProductBody = zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "price": zod.number(),
+  "category": zod.string(),
+  "imageUrl": zod.string().optional(),
+  "inStock": zod.boolean().optional(),
+  "featured": zod.boolean().optional(),
+  "stockCount": zod.number().optional()
+})
+
+
+/**
+ * @summary Featured products
  */
 export const ListFeaturedProductsResponseItem = zod.object({
   "id": zod.number(),
@@ -187,7 +254,7 @@ export const ListFeaturedProductsResponse = zod.array(ListFeaturedProductsRespon
 
 
 /**
- * @summary List product categories with counts
+ * @summary Product categories
  */
 export const ListProductCategoriesResponseItem = zod.object({
   "name": zod.string(),
@@ -217,6 +284,45 @@ export const GetProductResponse = zod.object({
 
 
 /**
+ * @summary Update a product
+ */
+export const UpdateProductParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateProductBody = zod.object({
+  "name": zod.string().optional(),
+  "description": zod.string().optional(),
+  "price": zod.number().optional(),
+  "category": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "inStock": zod.boolean().optional(),
+  "featured": zod.boolean().optional(),
+  "stockCount": zod.number().optional()
+})
+
+export const UpdateProductResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "price": zod.number(),
+  "category": zod.string(),
+  "imageUrl": zod.string().nullish(),
+  "inStock": zod.boolean(),
+  "featured": zod.boolean(),
+  "stockCount": zod.number().optional()
+})
+
+
+/**
+ * @summary Delete a product
+ */
+export const DeleteProductParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary List orders
  */
 export const ListOrdersResponseItem = zod.object({
@@ -231,7 +337,7 @@ export const ListOrdersResponseItem = zod.object({
   "unitPrice": zod.number()
 })),
   "totalAmount": zod.number(),
-  "status": zod.string().describe('pending | processing | shipped | delivered'),
+  "status": zod.string(),
   "createdAt": zod.string()
 })
 export const ListOrdersResponse = zod.array(ListOrdersResponseItem)
@@ -270,8 +376,78 @@ export const GetOrderResponse = zod.object({
   "unitPrice": zod.number()
 })),
   "totalAmount": zod.number(),
-  "status": zod.string().describe('pending | processing | shipped | delivered'),
+  "status": zod.string(),
   "createdAt": zod.string()
 })
 
 
+/**
+ * @summary Update order status
+ */
+export const UpdateOrderParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateOrderBody = zod.object({
+  "status": zod.string().optional()
+})
+
+export const UpdateOrderResponse = zod.object({
+  "id": zod.number(),
+  "customerName": zod.string(),
+  "customerEmail": zod.string(),
+  "customerPhone": zod.string().nullish(),
+  "items": zod.array(zod.object({
+  "productId": zod.number(),
+  "productName": zod.string(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number()
+})),
+  "totalAmount": zod.number(),
+  "status": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Staff login
+ */
+export const AdminLoginBody = zod.object({
+  "password": zod.string()
+})
+
+export const AdminLoginResponse = zod.object({
+  "success": zod.boolean(),
+  "token": zod.string()
+})
+
+
+/**
+ * @summary Check admin session
+ */
+export const GetAdminMeResponse = zod.object({
+  "authenticated": zod.boolean()
+})
+
+
+/**
+ * @summary Request a presigned upload URL
+ */
+export const RequestUploadUrlBody = zod.object({
+  "name": zod.string(),
+  "size": zod.number(),
+  "contentType": zod.string()
+})
+
+export const RequestUploadUrlResponse = zod.object({
+  "uploadURL": zod.string(),
+  "objectPath": zod.string()
+})
+
+
+/**
+ * @summary Serve an uploaded object
+ */
+export const GetStorageObjectParams = zod.object({
+  "objectPath": zod.coerce.string()
+})

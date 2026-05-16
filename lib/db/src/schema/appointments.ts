@@ -15,6 +15,7 @@ export const appointmentsTable = pgTable("appointments", {
   time: text("time").notNull(),
   status: text("status").notNull().default("pending"),
   notes: text("notes"),
+  customDescription: text("custom_description"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

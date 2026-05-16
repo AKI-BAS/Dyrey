@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, ilike, and, type SQL } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db, productsTable } from "@workspace/db";
 import {
   ListProductsResponse,
@@ -8,6 +8,11 @@ import {
   ListProductCategoriesResponse,
   GetProductParams,
   GetProductResponse,
+  CreateProductBody,
+  UpdateProductParams,
+  UpdateProductBody,
+  UpdateProductResponse,
+  DeleteProductParams,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -55,21 +60,67 @@ router.get("/products", async (req, res): Promise<void> => {
   res.json(ListProductsResponse.parse(filtered.map(serializeProduct)));
 });
 
+router.post("/products", async (req, res): Promise<void> => {
+  const parsed = CreateProductBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const [product] = await db.insert(productsTable).values({
+    name: parsed.data.name,
+    description: parsed.data.description,
+    price: String(parsed.data.price),
+    category: parsed.data.category,
+    imageUrl: parsed.data.imageUrl ?? null,
+    inStock: parsed.data.inStock ?? true,
+    featured: parsed.data.featured ?? false,
+    stockCount: parsed.data.stockCount ?? 0,
+  }).returning();
+  res.status(201).json(serializeProduct(product));
+});
+
 router.get("/products/:id", async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const params = GetProductParams.safeParse({ id: parseInt(raw, 10) });
-  if (!params.success) {
-    res.status(400).json({ error: "Invalid id" });
-    return;
-  }
+  if (!params.success) { res.status(400).json({ error: "Invalid id" }); return; }
 
   const [product] = await db.select().from(productsTable).where(eq(productsTable.id, params.data.id));
-  if (!product) {
-    res.status(404).json({ error: "Product not found" });
-    return;
-  }
+  if (!product) { res.status(404).json({ error: "Product not found" }); return; }
 
   res.json(GetProductResponse.parse(serializeProduct(product)));
+});
+
+router.patch("/products/:id", async (req, res): Promise<void> => {
+  const params = UpdateProductParams.safeParse({ id: parseInt(req.params.id, 10) });
+  if (!params.success) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const parsed = UpdateProductBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+
+  const updates: Record<string, unknown> = {};
+  if (parsed.data.name !== undefined) updates.name = parsed.data.name;
+  if (parsed.data.description !== undefined) updates.description = parsed.data.description;
+  if (parsed.data.price !== undefined) updates.price = String(parsed.data.price);
+  if (parsed.data.category !== undefined) updates.category = parsed.data.category;
+  if (parsed.data.imageUrl !== undefined) updates.imageUrl = parsed.data.imageUrl;
+  if (parsed.data.inStock !== undefined) updates.inStock = parsed.data.inStock;
+  if (parsed.data.featured !== undefined) updates.featured = parsed.data.featured;
+  if (parsed.data.stockCount !== undefined) updates.stockCount = parsed.data.stockCount;
+
+  const [product] = await db.update(productsTable).set(updates).where(eq(productsTable.id, params.data.id)).returning();
+  if (!product) { res.status(404).json({ error: "Product not found" }); return; }
+
+  res.json(UpdateProductResponse.parse(serializeProduct(product)));
+});
+
+router.delete("/products/:id", async (req, res): Promise<void> => {
+  const params = DeleteProductParams.safeParse({ id: parseInt(req.params.id, 10) });
+  if (!params.success) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [product] = await db.delete(productsTable).where(eq(productsTable.id, params.data.id)).returning();
+  if (!product) { res.status(404).json({ error: "Product not found" }); return; }
+
+  res.sendStatus(204);
 });
 
 export default router;
