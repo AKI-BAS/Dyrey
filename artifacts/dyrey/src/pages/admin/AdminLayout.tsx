@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import {
   LayoutDashboard,
@@ -9,6 +9,9 @@ import {
   LogOut,
   Menu,
   Globe,
+  CalendarPlus,
+  PawPrint,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -17,6 +20,9 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/appointments", label: "Appointments", icon: CalendarDays },
+  { href: "/admin/book", label: "Book for Customer", icon: CalendarPlus },
+  { href: "/admin/patients", label: "Patients & Owners", icon: PawPrint },
+  { href: "/admin/staff", label: "Staff", icon: Users },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/services", label: "Services", icon: Stethoscope },
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
@@ -55,15 +61,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   useEffect(() => {
     const token = localStorage.getItem("admin_token");
-    if (!token) {
-      setLocation("/admin");
-    }
+    if (!token) setLocation("/admin");
   }, [setLocation]);
 
   const handleLogout = () => {
     localStorage.removeItem("admin_token");
+    localStorage.removeItem("staff_name");
     setLocation("/admin");
   };
+
+  const staffName = localStorage.getItem("staff_name");
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
@@ -72,6 +79,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <div className="p-5 border-b">
           <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-0.5">Staff Portal</p>
           <p className="font-bold text-slate-800 text-sm">Dýrey Veterinary</p>
+          {staffName && (
+            <p className="text-xs text-primary font-medium mt-1">👤 {staffName}</p>
+          )}
         </div>
         <div className="flex-1 overflow-y-auto p-4">
           <NavLinks />
@@ -86,7 +96,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
       {/* Mobile header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-white border-b flex items-center justify-between px-4 h-14">
-        <p className="font-bold text-sm text-slate-800">Dýrey Staff Portal</p>
+        <div>
+          <p className="font-bold text-sm text-slate-800">Dýrey Staff Portal</p>
+          {staffName && <p className="text-xs text-primary">👤 {staffName}</p>}
+        </div>
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon"><Menu className="h-5 w-5" /></Button>

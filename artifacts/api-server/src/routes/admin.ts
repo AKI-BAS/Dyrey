@@ -4,6 +4,7 @@ import { AdminLoginBody, AdminLoginResponse, GetAdminMeResponse } from "@workspa
 import {
   db, appointmentsTable, ordersTable, scheduleCapacityTable, staffNotepadTable,
   staffNotesTable, siteNotificationsTable, siteContentTable, restockNotificationsTable,
+  staffMembersTable,
 } from "@workspace/db";
 
 const router: IRouter = Router();
@@ -200,6 +201,29 @@ router.get("/admin/restock-signups", async (req, res): Promise<void> => {
   if (!requireAdminToken(req, res)) return;
   const rows = await db.select().from(restockNotificationsTable).orderBy(desc(restockNotificationsTable.createdAt));
   res.json(rows.map(r => ({ ...r, createdAt: r.createdAt.toISOString() })));
+});
+
+// --- Staff members ---
+router.get("/admin/staff", async (req, res): Promise<void> => {
+  if (!requireAdminToken(req, res)) return;
+  const rows = await db.select().from(staffMembersTable).orderBy(staffMembersTable.name);
+  res.json(rows.map(r => ({ ...r, createdAt: r.createdAt.toISOString() })));
+});
+
+router.post("/admin/staff", async (req, res): Promise<void> => {
+  if (!requireAdminToken(req, res)) return;
+  const { name } = req.body as { name: string };
+  if (!name || typeof name !== "string") { res.status(400).json({ error: "name required" }); return; }
+  const [row] = await db.insert(staffMembersTable).values({ name, createdAt: new Date() }).returning();
+  res.status(201).json({ ...row, createdAt: row.createdAt.toISOString() });
+});
+
+router.delete("/admin/staff/:id", async (req, res): Promise<void> => {
+  if (!requireAdminToken(req, res)) return;
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  await db.delete(staffMembersTable).where(eq(staffMembersTable.id, id));
+  res.status(204).send();
 });
 
 export default router;

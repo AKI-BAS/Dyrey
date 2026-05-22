@@ -52,6 +52,9 @@ app.use("/api", router);
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import AdminBookAppointment from "@/pages/admin/AdminBookAppointment";
+import AdminPatients from "@/pages/admin/AdminPatients";
+import AdminStaff from "@/pages/admin/AdminStaff";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
