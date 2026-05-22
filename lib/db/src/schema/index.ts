@@ -9,3 +9,4 @@ export * from "./staffNotes";
 export * from "./restockNotifications";
 export * from "./siteNotifications";
 export * from "./siteContent";
+export * from "./staffMembers";
