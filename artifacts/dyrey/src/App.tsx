@@ -27,7 +27,6 @@ import AdminProducts from "@/pages/admin/AdminProducts";
 import AdminServices from "@/pages/admin/AdminServices";
 import AdminOrders from "@/pages/admin/AdminOrders";
 import AdminContent from "@/pages/admin/AdminContent";
-import AdminBookAppointment from "@/pages/admin/AdminBookAppointment";
 import AdminPatients from "@/pages/admin/AdminPatients";
 import AdminStaff from "@/pages/admin/AdminStaff";
 
@@ -209,7 +208,6 @@ function ClerkProviderWithRoutes() {
             <Route path="/admin/services" component={AdminServices} />
             <Route path="/admin/orders" component={AdminOrders} />
             <Route path="/admin/content" component={AdminContent} />
-<Route path="/admin/book" component={AdminBookAppointment} />
 <Route path="/admin/patients" component={AdminPatients} />
 <Route path="/admin/staff" component={AdminStaff} />
 

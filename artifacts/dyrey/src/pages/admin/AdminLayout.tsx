@@ -20,7 +20,6 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/appointments", label: "Appointments", icon: CalendarDays },
-  { href: "/admin/book", label: "Book for Customer", icon: CalendarPlus },
   { href: "/admin/patients", label: "Patients & Owners", icon: PawPrint },
   { href: "/admin/staff", label: "Staff", icon: Users },
   { href: "/admin/products", label: "Products", icon: Package },

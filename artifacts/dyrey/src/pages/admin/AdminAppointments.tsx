@@ -1,246 +1,424 @@
-import { useState } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { format } from "date-fns";
-import { Calendar as CalendarIcon, Clock, CheckCircle2 } from "lucide-react";
-import { useListServices } from "@workspace/api-client-react";
+import { useState, useEffect } from "react";
+import {
+  useListAppointments,
+  useUpdateAppointment,
+  useCancelAppointment,
+  getListAppointmentsQueryKey,
+  useListServices,
+} from "@workspace/api-client-react";
+import type { Appointment } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import AdminLayout from "./AdminLayout";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import {
+  CheckCircle2, XCircle, Search, Phone, Mail, CalendarDays, Clock,
+  MessageSquare, PawPrint, AlertCircle, Loader2, Save, Plus, CalendarIcon,
+} from "lucide-react";
+import { StaffNotepad } from "@/components/StaffNotepad";
 import { useToast } from "@/hooks/use-toast";
+import { format, parseISO } from "date-fns";
 
-const formSchema = z.object({
-  ownerName: z.string().min(2, "Name is required"),
-  ownerEmail: z.string().email("Valid email is required"),
-  ownerPhone: z.string().min(6, "Phone number is required"),
-  petName: z.string().min(1, "Pet name is required"),
-  petType: z.string().min(1, "Pet type is required"),
-  serviceId: z.coerce.number().min(1, "Please select a service"),
-  date: z.date({ required_error: "A date is required" }),
-  time: z.string().min(1, "A time is required"),
-  notes: z.string().optional(),
-  customDescription: z.string().optional(),
-});
-
-const TIME_SLOTS = ["08:00","09:00","10:00","11:00","13:00","14:00","15:00","16:00"];
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 function adminHeaders() {
   const token = localStorage.getItem("admin_token") ?? "";
   return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 }
 
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+const STATUS_COLORS: Record<string, string> = {
+  pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  confirmed: "bg-blue-100 text-blue-800 border-blue-200",
+  completed: "bg-green-100 text-green-800 border-green-200",
+  cancelled: "bg-red-100 text-red-800 border-red-200",
+};
 
-export default function AdminBookAppointment() {
+const TIME_SLOTS = ["08:00","09:00","10:00","11:00","13:00","14:00","15:00","16:00"];
+
+// ---------------------------------------------------------------------------
+// New Appointment Dialog
+// ---------------------------------------------------------------------------
+
+function NewAppointmentDialog({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess: () => void }) {
   const { toast } = useToast();
   const { data: services, isLoading: loadingServices } = useListServices();
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [lastBooking, setLastBooking] = useState<{ ownerName: string; petName: string; date: string; time: string } | null>(null);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      ownerName: "", ownerEmail: "", ownerPhone: "",
-      petName: "", petType: "", notes: "", customDescription: "",
-    },
+  const [submitting, setSubmitting] = useState(false);
+  const [date, setDate] = useState<Date | undefined>();
+  const [fields, setFields] = useState({
+    ownerName: "", ownerEmail: "", ownerPhone: "",
+    petName: "", petType: "", serviceId: "", time: "", notes: "",
   });
 
-  const selectedServiceId = form.watch("serviceId");
-  const selectedService = services?.find(s => s.id === selectedServiceId);
-  const needsDescription = selectedService?.allowCustomDescription === true;
+  const set = (k: string, v: string) => setFields(f => ({ ...f, [k]: v }));
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const handleSubmit = async () => {
+    if (!fields.ownerName || !fields.ownerEmail || !fields.ownerPhone || !fields.petName || !fields.petType || !fields.serviceId || !date || !fields.time) {
+      toast({ title: "Please fill in all required fields.", variant: "destructive" }); return;
+    }
+    setSubmitting(true);
     try {
       const res = await fetch(`${basePath}/api/appointments`, {
-        method: "POST",
-        headers: adminHeaders(),
-        body: JSON.stringify({
-          ownerName: values.ownerName,
-          ownerEmail: values.ownerEmail,
-          ownerPhone: values.ownerPhone,
-          petName: values.petName,
-          petType: values.petType,
-          serviceId: values.serviceId,
-          date: format(values.date, "yyyy-MM-dd"),
-          time: values.time,
-          notes: values.notes || undefined,
-          customDescription: values.customDescription || undefined,
-        }),
+        method: "POST", headers: adminHeaders(),
+        body: JSON.stringify({ ...fields, serviceId: Number(fields.serviceId), date: format(date, "yyyy-MM-dd") }),
       });
-      if (!res.ok) throw new Error("Failed");
-      setLastBooking({
-        ownerName: values.ownerName,
-        petName: values.petName,
-        date: format(values.date, "EEEE, MMMM d, yyyy"),
-        time: values.time,
-      });
-      setIsSuccess(true);
+      if (!res.ok) throw new Error();
+      toast({ title: "Appointment booked", description: `${fields.petName} for ${fields.ownerName}` });
+      setFields({ ownerName: "", ownerEmail: "", ownerPhone: "", petName: "", petType: "", serviceId: "", time: "", notes: "" });
+      setDate(undefined);
+      onSuccess();
+      onClose();
     } catch {
       toast({ title: "Error", description: "Failed to book appointment.", variant: "destructive" });
+    } finally { setSubmitting(false); }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>New Appointment</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-5 py-2">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Pet</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-sm font-medium">Pet Name *</label><Input className="mt-1" placeholder="Max" value={fields.petName} onChange={e => set("petName", e.target.value)} /></div>
+              <div><label className="text-sm font-medium">Type / Breed *</label><Input className="mt-1" placeholder="Dog / Golden Retriever" value={fields.petType} onChange={e => set("petType", e.target.value)} /></div>
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Service</p>
+            <Select disabled={loadingServices} onValueChange={v => set("serviceId", v)}>
+              <SelectTrigger><SelectValue placeholder="Select a service" /></SelectTrigger>
+              <SelectContent>
+                {services?.filter(s => s.isActive).map(s => (
+                  <SelectItem key={s.id} value={s.id.toString()}>{s.name} ({s.duration} min) — {s.price.toLocaleString()} kr.</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Date & Time</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium">Date *</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full mt-1 pl-3 text-left font-normal", !date && "text-muted-foreground")}>
+                      {date ? format(date, "PPP") : <span>Pick a date</span>}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={date} onSelect={setDate}
+                      disabled={d => d < new Date(new Date().setHours(0,0,0,0)) || d.getDay() === 0 || d.getDay() === 6}
+                      initialFocus />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Time *</label>
+                <Select onValueChange={v => set("time", v)}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select time" /></SelectTrigger>
+                  <SelectContent>
+                    {TIME_SLOTS.map(t => <SelectItem key={t} value={t}><div className="flex items-center gap-2"><Clock className="h-4 w-4 opacity-50" />{t}</div></SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Owner</p>
+            <div className="space-y-3">
+              <div><label className="text-sm font-medium">Full Name *</label><Input className="mt-1" placeholder="Jón Jónsson" value={fields.ownerName} onChange={e => set("ownerName", e.target.value)} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="text-sm font-medium">Email *</label><Input className="mt-1" type="email" placeholder="jon@example.is" value={fields.ownerEmail} onChange={e => set("ownerEmail", e.target.value)} /></div>
+                <div><label className="text-sm font-medium">Phone *</label><Input className="mt-1" type="tel" placeholder="555 1234" value={fields.ownerPhone} onChange={e => set("ownerPhone", e.target.value)} /></div>
+              </div>
+              <div><label className="text-sm font-medium">Staff Notes <span className="text-slate-400 font-normal">(optional)</span></label><Textarea className="mt-1 resize-none" rows={2} placeholder="Internal notes…" value={fields.notes} onChange={e => set("notes", e.target.value)} /></div>
+            </div>
+          </div>
+        </div>
+        <DialogFooter className="border-t pt-4">
+          <p className="text-xs text-slate-400 mr-auto self-center">No confirmation email will be sent.</p>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleSubmit} disabled={submitting}>
+            {submitting && <Loader2 className="h-4 w-4 animate-spin mr-1" />} Book Appointment
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Appointment Detail Dialog
+// ---------------------------------------------------------------------------
+
+function AppointmentDetailDialog({
+  appointment, open, onClose, onConfirm, onComplete, onCancel, onNotesSaved, loading,
+}: {
+  appointment: Appointment | null; open: boolean; onClose: () => void;
+  onConfirm: (id: number) => void; onComplete: (id: number) => void;
+  onCancel: (id: number) => void; onNotesSaved: () => void; loading: boolean;
+}) {
+  const { toast } = useToast();
+  const updateAppointment = useUpdateAppointment();
+  const [staffNotes, setStaffNotes] = useState("");
+  const [notesSaving, setNotesSaving] = useState(false);
+
+  useEffect(() => {
+    if (appointment) setStaffNotes(appointment.notes ?? "");
+  }, [appointment]);
+
+  if (!appointment) return null;
+  const a = appointment;
+
+  const handleSaveNotes = async () => {
+    setNotesSaving(true);
+    try {
+      await updateAppointment.mutateAsync({ id: a.id, data: { notes: staffNotes } });
+      onNotesSaved();
+      toast({ title: "Notes saved" });
+    } catch {
+      toast({ title: "Error", description: "Failed to save notes.", variant: "destructive" });
+    } finally { setNotesSaving(false); }
+  };
+
+  const notesChanged = staffNotes !== (a.notes ?? "");
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <div className="flex items-start justify-between gap-4">
+            <DialogTitle className="text-xl">
+              {a.petName}<span className="text-muted-foreground font-normal text-base ml-2">({a.petType})</span>
+            </DialogTitle>
+            <Badge variant="outline" className={`shrink-0 font-medium text-sm px-3 py-1 ${STATUS_COLORS[a.status] ?? ""}`}>
+              {a.status.charAt(0).toUpperCase() + a.status.slice(1)}
+            </Badge>
+          </div>
+        </DialogHeader>
+        <div className="space-y-5 mt-2">
+          <div className="grid grid-cols-2 gap-4 bg-slate-50 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                <CalendarDays className="h-4 w-4 text-primary" />
+              </div>
+              <div><p className="text-xs text-slate-500">Date</p><p className="font-semibold text-sm">{format(parseISO(a.date), "EEEE, MMMM d, yyyy")}</p></div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                <Clock className="h-4 w-4 text-primary" />
+              </div>
+              <div><p className="text-xs text-slate-500">Time</p><p className="font-semibold text-sm">{a.time}</p></div>
+            </div>
+          </div>
+          <div><p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Service</p><p className="font-medium text-slate-800">{a.serviceName}</p></div>
+          <Separator />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5"><PawPrint className="h-3 w-3" /> Pet</p>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-sm"><span className="text-slate-500">Name</span><span className="font-medium">{a.petName}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-slate-500">Type</span><span className="font-medium">{a.petType}</span></div>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Owner</p>
+              <div className="space-y-2">
+                <p className="font-medium text-sm">{a.ownerName}</p>
+                <a href={`mailto:${a.ownerEmail}`} className="flex items-center gap-2 text-sm text-primary hover:underline"><Mail className="h-3.5 w-3.5 shrink-0" />{a.ownerEmail}</a>
+                {a.ownerPhone && <a href={`tel:${a.ownerPhone}`} className="flex items-center gap-2 text-sm text-primary hover:underline"><Phone className="h-3.5 w-3.5 shrink-0" />{a.ownerPhone}</a>}
+              </div>
+            </div>
+          </div>
+          {a.customDescription && (
+            <>
+              <Separator />
+              <div>
+                <div className="flex items-center gap-2 mb-3"><AlertCircle className="h-4 w-4 text-amber-500" /><p className="text-xs font-semibold uppercase tracking-wider text-amber-600">Customer's Reason</p></div>
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4"><p className="text-sm text-slate-800 leading-relaxed">"{a.customDescription}"</p></div>
+              </div>
+            </>
+          )}
+          <Separator />
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5"><MessageSquare className="h-3 w-3" /> Staff Notes</p>
+              {notesChanged && (
+                <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5 text-primary border-primary/30 hover:bg-primary/5" onClick={handleSaveNotes} disabled={notesSaving}>
+                  {notesSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />} Save notes
+                </Button>
+              )}
+              {!notesChanged && a.notes && <span className="text-xs text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Saved</span>}
+            </div>
+            <Textarea value={staffNotes} onChange={e => setStaffNotes(e.target.value)} placeholder="Add internal notes…" rows={4} className="text-sm resize-none bg-slate-50 border-slate-200 focus:bg-white" />
+            <p className="text-xs text-slate-400 mt-1.5">Only visible to staff.</p>
+          </div>
+        </div>
+        <DialogFooter className="gap-2 mt-4 flex-wrap">
+          <Button variant="outline" onClick={onClose} className="mr-auto">Close</Button>
+          {a.status !== "cancelled" && a.status !== "completed" && (
+            <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => { onCancel(a.id); onClose(); }} disabled={loading}>
+              <XCircle className="h-4 w-4 mr-1.5" /> Cancel
+            </Button>
+          )}
+          {a.status === "pending" && (
+            <Button variant="outline" className="text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => { onConfirm(a.id); onClose(); }} disabled={loading}>
+              <CheckCircle2 className="h-4 w-4 mr-1.5" /> Confirm
+            </Button>
+          )}
+          {a.status === "confirmed" && (
+            <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { onComplete(a.id); onClose(); }} disabled={loading}>
+              <CheckCircle2 className="h-4 w-4 mr-1.5" /> Mark Completed
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main page
+// ---------------------------------------------------------------------------
+
+export default function AdminAppointments() {
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Appointment | null>(null);
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: appointments, isLoading } = useListAppointments(
+    statusFilter !== "all" ? { status: statusFilter } : {}
+  );
+  const updateAppointment = useUpdateAppointment();
+  const cancelAppointment = useCancelAppointment();
+
+  const filtered = appointments?.filter(a => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      a.ownerName.toLowerCase().includes(q) ||
+      a.petName.toLowerCase().includes(q) ||
+      a.ownerEmail.toLowerCase().includes(q) ||
+      a.serviceName.toLowerCase().includes(q)
+    );
+  }) ?? [];
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: getListAppointmentsQueryKey() });
+
+  const handleStatus = async (id: number, status: string) => {
+    try {
+      await updateAppointment.mutateAsync({ id, data: { status } });
+      invalidate();
+      toast({ title: "Updated", description: `Appointment marked as ${status}.` });
+    } catch {
+      toast({ title: "Error", description: "Failed to update appointment.", variant: "destructive" });
     }
   };
 
-  if (isSuccess && lastBooking) {
-    return (
-      <AdminLayout>
-        <div className="max-w-lg mx-auto text-center py-16">
-          <div className="h-20 w-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 className="h-10 w-10" />
-          </div>
-          <h2 className="text-2xl font-bold mb-2">Appointment Booked</h2>
-          <p className="text-slate-500 mb-6">
-            <strong>{lastBooking.petName}</strong> for <strong>{lastBooking.ownerName}</strong><br />
-            {lastBooking.date} at {lastBooking.time}
-          </p>
-          <p className="text-xs text-slate-400 mb-8">No confirmation email was sent — this is a staff booking.</p>
-          <div className="flex gap-3 justify-center">
-            <Button onClick={() => { setIsSuccess(false); form.reset(); }}>Book Another</Button>
-            <Button variant="outline" onClick={() => window.location.href = `${basePath}/admin/appointments`}>
-              View Appointments
-            </Button>
-          </div>
-        </div>
-      </AdminLayout>
-    );
-  }
+  const handleCancel = async (id: number) => {
+    try {
+      await cancelAppointment.mutateAsync({ id });
+      invalidate();
+      toast({ title: "Cancelled", description: "Appointment cancelled." });
+    } catch {
+      toast({ title: "Error", description: "Failed to cancel appointment.", variant: "destructive" });
+    }
+  };
+
+  const loading = updateAppointment.isPending || cancelAppointment.isPending;
 
   return (
     <AdminLayout>
-      <div className="max-w-2xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Book Appointment</h1>
-          <p className="text-slate-500 text-sm mt-1">Book on behalf of a customer — no confirmation email will be sent.</p>
+      <div className="flex gap-6 items-start">
+        <div className="flex-1 min-w-0 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">Appointments</h1>
+              <p className="text-slate-500 text-sm mt-1">Click any row to view details and add notes</p>
+            </div>
+            <Button onClick={() => setBookingOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" /> New Appointment
+            </Button>
+          </div>
+
+          <div className="flex gap-3 flex-wrap">
+            <div className="relative flex-1 min-w-48">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input placeholder="Search by name, pet, email…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="confirmed">Confirmed</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Card>
+            <CardContent className="p-0">
+              {isLoading ? (
+                <p className="p-6 text-sm text-slate-400">Loading appointments…</p>
+              ) : filtered.length === 0 ? (
+                <p className="p-6 text-sm text-slate-400">No appointments found.</p>
+              ) : (
+                <div className="divide-y">
+                  {filtered.map(a => (
+                    <div key={a.id} className="p-4 flex items-start justify-between gap-4 flex-wrap cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => setSelected(a)}>
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-semibold text-sm">{a.ownerName}</p>
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${STATUS_COLORS[a.status] ?? ""}`}>{a.status}</span>
+                          {a.customDescription && <span className="text-xs bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1"><AlertCircle className="h-2.5 w-2.5" /> Has message</span>}
+                          {a.notes && <span className="text-xs bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded-full flex items-center gap-1"><MessageSquare className="h-2.5 w-2.5" /> Has notes</span>}
+                        </div>
+                        <p className="text-sm text-slate-600">{a.petName} ({a.petType}) · {a.serviceName}</p>
+                        <p className="text-xs text-slate-500">{a.date} at {a.time} · {a.ownerEmail}{a.ownerPhone ? ` · ${a.ownerPhone}` : ""}</p>
+                      </div>
+                      <div className="flex gap-2 shrink-0" onClick={e => e.stopPropagation()}>
+                        {a.status === "pending" && <Button size="sm" variant="outline" className="text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => handleStatus(a.id, "confirmed")} disabled={loading}><CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Confirm</Button>}
+                        {a.status === "confirmed" && <Button size="sm" variant="outline" className="text-green-600 border-green-200 hover:bg-green-50" onClick={() => handleStatus(a.id, "completed")} disabled={loading}><CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Complete</Button>}
+                        {a.status !== "cancelled" && a.status !== "completed" && <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => handleCancel(a.id)} disabled={loading}><XCircle className="h-3.5 w-3.5 mr-1" /> Cancel</Button>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
-        <Card>
-          <CardHeader className="bg-slate-50/50 border-b">
-            <CardTitle>Appointment Details</CardTitle>
-            <CardDescription>Fill in the customer and pet information</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-
-                {/* Pet */}
-                <div className="space-y-4">
-                  <h3 className="font-semibold border-b pb-2">Pet Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="petName" render={({ field }) => (
-                      <FormItem><FormLabel>Pet Name</FormLabel><FormControl><Input placeholder="Max" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name="petType" render={({ field }) => (
-                      <FormItem><FormLabel>Pet Type / Breed</FormLabel><FormControl><Input placeholder="Dog / Golden Retriever" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                  </div>
-                </div>
-
-                {/* Service */}
-                <div className="space-y-4">
-                  <h3 className="font-semibold border-b pb-2">Service</h3>
-                  <FormField control={form.control} name="serviceId" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Service</FormLabel>
-                      <Select disabled={loadingServices} onValueChange={(val) => field.onChange(Number(val))}>
-                        <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Select a service" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {services?.filter(s => s.isActive).map(s => (
-                            <SelectItem key={s.id} value={s.id.toString()}>
-                              {s.name} ({s.duration} min) — {s.price.toLocaleString()} kr.
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  {needsDescription && (
-                    <FormField control={form.control} name="customDescription" render={({ field }) => (
-                      <FormItem><FormLabel>Description / Reason</FormLabel><FormControl><Textarea rows={3} className="resize-none" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                  )}
-                </div>
-
-                {/* Date & Time */}
-                <div className="space-y-4">
-                  <h3 className="font-semibold border-b pb-2">Date & Time</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField control={form.control} name="date" render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Date</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button variant="outline" className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar mode="single" selected={field.value} onSelect={field.onChange}
-                              disabled={(date) => date < new Date(new Date().setHours(0,0,0,0)) || date.getDay() === 0 || date.getDay() === 6}
-                              initialFocus />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="time" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Time</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Select time" /></SelectTrigger></FormControl>
-                          <SelectContent>
-                            {TIME_SLOTS.map(t => (
-                              <SelectItem key={t} value={t}>
-                                <div className="flex items-center gap-2"><Clock className="h-4 w-4 opacity-50" />{t}</div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                  </div>
-                </div>
-
-                {/* Owner */}
-                <div className="space-y-4">
-                  <h3 className="font-semibold border-b pb-2">Owner Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="ownerName" render={({ field }) => (
-                      <FormItem className="md:col-span-2"><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="Jón Jónsson" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name="ownerEmail" render={({ field }) => (
-                      <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="jon@example.is" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name="ownerPhone" render={({ field }) => (
-                      <FormItem><FormLabel>Phone</FormLabel><FormControl><Input type="tel" placeholder="555 1234" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name="notes" render={({ field }) => (
-                      <FormItem className="md:col-span-2"><FormLabel>Staff Notes <span className="text-muted-foreground font-normal">(optional)</span></FormLabel><FormControl><Textarea placeholder="Internal notes about this booking…" className="resize-none" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                  </div>
-                </div>
-
-                <Button type="submit" className="w-full h-12 text-base" disabled={form.formState.isSubmitting}>
-                  {form.formState.isSubmitting ? "Booking…" : "Book Appointment"}
-                </Button>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
+        <div className="hidden lg:flex flex-col w-72 xl:w-80 shrink-0 sticky top-8" style={{ maxHeight: "calc(100vh - 4rem)" }}>
+          <StaffNotepad />
+        </div>
       </div>
+
+      <NewAppointmentDialog open={bookingOpen} onClose={() => setBookingOpen(false)} onSuccess={invalidate} />
+
+      <AppointmentDetailDialog
+        appointment={selected} open={!!selected} onClose={() => setSelected(null)}
+        onConfirm={id => handleStatus(id, "confirmed")} onComplete={id => handleStatus(id, "completed")}
+        onCancel={handleCancel} onNotesSaved={invalidate} loading={loading}
+      />
     </AdminLayout>
   );
 }
