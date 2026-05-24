@@ -16,20 +16,23 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+function getRole() { return localStorage.getItem("staff_role") ?? "staff"; }
 
-const NAV = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/appointments", label: "Appointments", icon: CalendarDays },
-  { href: "/admin/patients", label: "Patients & Owners", icon: PawPrint },
-  { href: "/admin/staff", label: "Staff", icon: Users },
-  { href: "/admin/products", label: "Products", icon: Package },
-  { href: "/admin/services", label: "Services", icon: Stethoscope },
-  { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
-  { href: "/admin/content", label: "Edit Website", icon: Globe },
+const ALL_NAV = [
+  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, ownerOnly: false },
+  { href: "/admin/appointments", label: "Appointments", icon: CalendarDays, ownerOnly: false },
+  { href: "/admin/patients", label: "Patients & Owners", icon: PawPrint, ownerOnly: false },
+  { href: "/admin/staff", label: "Staff", icon: Users, ownerOnly: true },
+  { href: "/admin/products", label: "Products", icon: Package, ownerOnly: false },
+  { href: "/admin/services", label: "Services", icon: Stethoscope, ownerOnly: false },
+  { href: "/admin/orders", label: "Orders", icon: ShoppingBag, ownerOnly: false },
+  { href: "/admin/content", label: "Edit Website", icon: Globe, ownerOnly: true },
 ];
 
 function NavLinks({ onClick }: { onClick?: () => void }) {
   const [location] = useLocation();
+  const role = getRole();
+  const NAV = ALL_NAV.filter(n => !n.ownerOnly || role === "owner");
   return (
     <nav className="space-y-1">
       {NAV.map(({ href, label, icon: Icon }) => (
@@ -66,6 +69,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const handleLogout = () => {
     localStorage.removeItem("admin_token");
     localStorage.removeItem("staff_name");
+localStorage.removeItem("staff_role");
+localStorage.removeItem("login_role");
     setLocation("/admin");
   };
 

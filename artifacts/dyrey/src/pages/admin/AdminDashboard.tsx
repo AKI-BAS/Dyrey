@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { StaffNotepad } from "@/components/StaffNotepad";
+const isOwner = () => localStorage.getItem("staff_role") === "owner";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 const TIME_SLOTS = ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00"];
@@ -255,27 +256,29 @@ export default function AdminDashboard() {
                 </Card>
 
                 <Card>
-                  <CardContent className="pt-4 space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 bg-emerald-100 rounded-lg flex items-center justify-center shrink-0">
-                        <TrendingUp className="h-4 w-4 text-emerald-600" />
-                      </div>
-                      <div>
-                        <p className="text-lg font-bold leading-none">{analytics ? `${Math.round(analytics.totalRevenue).toLocaleString()} kr.` : "—"}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">Total Revenue</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 bg-violet-100 rounded-lg flex items-center justify-center shrink-0">
-                        <ShoppingBag className="h-4 w-4 text-violet-600" />
-                      </div>
-                      <div>
-                        <p className="text-lg font-bold leading-none">{analytics?.orderCount ?? "—"}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">Total Orders</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+  <CardContent className="pt-4 space-y-3">
+    {isOwner() && (
+      <div className="flex items-center gap-3">
+        <div className="h-9 w-9 bg-emerald-100 rounded-lg flex items-center justify-center shrink-0">
+          <TrendingUp className="h-4 w-4 text-emerald-600" />
+        </div>
+        <div>
+          <p className="text-lg font-bold leading-none">{analytics ? `${Math.round(analytics.totalRevenue).toLocaleString()} kr.` : "—"}</p>
+          <p className="text-xs text-slate-500 mt-0.5">Total Revenue</p>
+        </div>
+      </div>
+    )}
+    <div className="flex items-center gap-3">
+      <div className="h-9 w-9 bg-violet-100 rounded-lg flex items-center justify-center shrink-0">
+        <ShoppingBag className="h-4 w-4 text-violet-600" />
+      </div>
+      <div>
+        <p className="text-lg font-bold leading-none">{analytics?.orderCount ?? "—"}</p>
+        <p className="text-xs text-slate-500 mt-0.5">Total Orders</p>
+      </div>
+    </div>
+  </CardContent>
+</Card>
               </div>
             </div>
           </div>

@@ -80,8 +80,9 @@ export default function AdminOrders() {
                         ))}
                       </div>
                       <p className="text-xs text-slate-500">
-                        Total: {o.totalAmount.toLocaleString()} kr. · {format(new Date(o.createdAt), "PPp")}
-                      </p>
+  {localStorage.getItem("staff_role") === "owner" && `Total: ${o.totalAmount.toLocaleString()} kr. · `}
+  {format(new Date(o.createdAt), "PPp")}
+</p>
                     </div>
                     <div className="shrink-0 w-40">
                       <Select

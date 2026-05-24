@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Trash2, User, Loader2, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -14,15 +15,22 @@ function adminHeaders() {
   return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 }
 
-interface StaffMember { id: number; name: string; createdAt: string; }
+interface StaffMember { id: number; name: string; role: string; createdAt: string; }
 
 export default function AdminStaff() {
+  const [, setLocation] = useLocation();
+  const role = localStorage.getItem("staff_role") ?? "staff";
+  if (role !== "owner") {
+    setLocation("/admin/dashboard");
+    return null;
+  }
   const { toast } = useToast();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [newName, setNewName] = useState("");
-  const [saving, setSaving] = useState(false);
+const [newRole, setNewRole] = useState<"staff" | "owner">("staff");
+const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const currentStaff = localStorage.getItem("staff_name");
 
@@ -40,7 +48,7 @@ export default function AdminStaff() {
     try {
       const res = await fetch(`${basePath}/api/admin/staff`, {
         method: "POST", headers: adminHeaders(),
-        body: JSON.stringify({ name: newName.trim() }),
+        body: JSON.stringify({ name: newName.trim(), role: newRole }),
       });
       if (!res.ok) throw new Error();
       toast({ title: "Staff member added" });
@@ -102,7 +110,7 @@ export default function AdminStaff() {
                       </div>
                       <div>
                         <p className="font-medium text-sm">{s.name}</p>
-                        {s.name === currentStaff && <p className="text-xs text-primary">Active</p>}
+<p className="text-xs text-slate-400">{s.role === "owner" ? "Owner" : "Staff"}{s.name === currentStaff ? " · Active" : ""}</p>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -129,6 +137,10 @@ export default function AdminStaff() {
         <DialogContent>
           <DialogHeader><DialogTitle>Add Staff Member</DialogTitle></DialogHeader>
           <Input placeholder="Full name" value={newName} onChange={e => setNewName(e.target.value)}
+<div className="flex gap-2 mt-2">
+  <Button size="sm" variant={newRole === "staff" ? "default" : "outline"} onClick={() => setNewRole("staff")}>Staff</Button>
+  <Button size="sm" variant={newRole === "owner" ? "default" : "outline"} onClick={() => setNewRole("owner")}>Owner</Button>
+</div>
             onKeyDown={e => e.key === "Enter" && handleAdd()} />
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>

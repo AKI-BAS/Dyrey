@@ -10,6 +10,7 @@ import {
 const router: IRouter = Router();
 
 const ADMIN_PASSWORD = process.env["ADMIN_PASSWORD"] ?? "staff1234";
+const OWNER_PASSWORD = process.env["OWNER_PASSWORD"] ?? "owner1234";
 
 function requireAdminToken(req: any, res: any): boolean {
   const auth = req.headers.authorization;
@@ -28,9 +29,11 @@ function requireAdminToken(req: any, res: any): boolean {
 router.post("/admin/login", async (req, res): Promise<void> => {
   const parsed = AdminLoginBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Invalid request" }); return; }
-  if (parsed.data.password !== ADMIN_PASSWORD) { res.status(401).json({ error: "Invalid password" }); return; }
+  const isOwner = parsed.data.password === OWNER_PASSWORD;
+  const isStaff = parsed.data.password === ADMIN_PASSWORD;
+  if (!isOwner && !isStaff) { res.status(401).json({ error: "Invalid password" }); return; }
   const token = Buffer.from(`admin:${Date.now()}`).toString("base64");
-  res.json(AdminLoginResponse.parse({ success: true, token }));
+  res.json({ success: true, token, loginRole: isOwner ? "owner" : "staff" });
 });
 
 router.get("/admin/me", async (req, res): Promise<void> => {
@@ -212,10 +215,21 @@ router.get("/admin/staff", async (req, res): Promise<void> => {
 
 router.post("/admin/staff", async (req, res): Promise<void> => {
   if (!requireAdminToken(req, res)) return;
-  const { name } = req.body as { name: string };
+  const { name, role = "staff" } = req.body as { name: string; role?: string };
   if (!name || typeof name !== "string") { res.status(400).json({ error: "name required" }); return; }
-  const [row] = await db.insert(staffMembersTable).values({ name, createdAt: new Date() }).returning();
+  const [row] = await db.insert(staffMembersTable).values({ name, role, createdAt: new Date() }).returning();
   res.status(201).json({ ...row, createdAt: row.createdAt.toISOString() });
+});
+
+router.patch("/admin/staff/:id", async (req, res): Promise<void> => {
+  if (!requireAdminToken(req, res)) return;
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const { role } = req.body as { role: string };
+  if (!role) { res.status(400).json({ error: "role required" }); return; }
+  const [row] = await db.update(staffMembersTable).set({ role }).where(eq(staffMembersTable.id, id)).returning();
+  if (!row) { res.status(404).json({ error: "Not found" }); return; }
+  res.json({ ...row, createdAt: row.createdAt.toISOString() });
 });
 
 router.delete("/admin/staff/:id", async (req, res): Promise<void> => {

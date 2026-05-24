@@ -14,7 +14,7 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [step, setStep] = useState<"password" | "staff">("password");
-  const [staffList, setStaffList] = useState<{ id: number; name: string }[]>([]);
+  const [staffList, setStaffList] = useState<{ id: number; name: string; role: string }[]>([]);
   const login = useAdminLogin();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,7 +22,8 @@ export default function AdminLogin() {
     setError("");
     try {
       const result = await login.mutateAsync({ data: { password } });
-      localStorage.setItem("admin_token", result.token);
+localStorage.setItem("admin_token", result.token);
+localStorage.setItem("login_role", (result as any).loginRole ?? "staff");
       // Fetch staff list
       const res = await fetch(`${basePath}/api/admin/staff`, {
         headers: { Authorization: `Bearer ${result.token}` },
@@ -43,10 +44,11 @@ export default function AdminLogin() {
     }
   };
 
-  const handleSelectStaff = (name: string) => {
-    localStorage.setItem("staff_name", name);
-    setLocation("/admin/dashboard");
-  };
+  const handleSelectStaff = (name: string, role: string) => {
+  localStorage.setItem("staff_name", name);
+  localStorage.setItem("staff_role", role === "owner" ? "owner" : localStorage.getItem("login_role") ?? "staff");
+  setLocation("/admin/dashboard");
+};
 
   if (step === "staff") {
     return (
@@ -61,11 +63,12 @@ export default function AdminLogin() {
           </CardHeader>
           <CardContent className="space-y-2">
             {staffList.map(s => (
-              <Button key={s.id} variant="outline" className="w-full justify-start text-left" onClick={() => handleSelectStaff(s.name)}>
-                <User className="h-4 w-4 mr-2 text-slate-400" />
-                {s.name}
-              </Button>
-            ))}
+  <Button key={s.id} variant="outline" className="w-full justify-start text-left" onClick={() => handleSelectStaff(s.name, s.role)}>
+    <User className="h-4 w-4 mr-2 text-slate-400" />
+    <span className="flex-1">{s.name}</span>
+    {s.role === "owner" && <span className="text-xs text-primary ml-2">Owner</span>}
+  </Button>
+))}
             <Button variant="ghost" className="w-full text-slate-400 text-sm mt-2" onClick={() => { localStorage.removeItem("staff_name"); setLocation("/admin/dashboard"); }}>
               Continue without selecting
             </Button>
