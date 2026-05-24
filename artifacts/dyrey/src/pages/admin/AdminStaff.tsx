@@ -142,7 +142,6 @@ const [saving, setSaving] = useState(false);
   <Button size="sm" variant={newRole === "staff" ? "default" : "outline"} onClick={() => setNewRole("staff")}>Staff</Button>
   <Button size="sm" variant={newRole === "owner" ? "default" : "outline"} onClick={() => setNewRole("owner")}>Owner</Button>
 </div>
-            onKeyDown={e => e.key === "Enter" && handleAdd()} />
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
             <Button disabled={!newName.trim() || saving} onClick={handleAdd}>
