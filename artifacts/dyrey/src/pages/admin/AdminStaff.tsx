@@ -136,7 +136,8 @@ const [saving, setSaving] = useState(false);
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>Add Staff Member</DialogTitle></DialogHeader>
-          <Input placeholder="Full name" value={newName} onChange={e => setNewName(e.target.value)}
+         <Input placeholder="Full name" value={newName} onChange={e => setNewName(e.target.value)}
+  onKeyDown={e => e.key === "Enter" && handleAdd()} />
 <div className="flex gap-2 mt-2">
   <Button size="sm" variant={newRole === "staff" ? "default" : "outline"} onClick={() => setNewRole("staff")}>Staff</Button>
   <Button size="sm" variant={newRole === "owner" ? "default" : "outline"} onClick={() => setNewRole("owner")}>Owner</Button>
