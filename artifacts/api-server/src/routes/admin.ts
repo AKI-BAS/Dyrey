@@ -1,3 +1,8 @@
+import {
+  db, appointmentsTable, ordersTable, scheduleCapacityTable, staffNotepadTable,
+  staffNotesTable, siteNotificationsTable, siteContentTable, restockNotificationsTable,
+  staffMembersTable, siteSettingsTable,
+} from "@workspace/db";
 import { Router, type IRouter } from "express";
 import { eq, sql, desc, and } from "drizzle-orm";
 import { AdminLoginBody, AdminLoginResponse, GetAdminMeResponse } from "@workspace/api-zod";
@@ -239,5 +244,25 @@ router.delete("/admin/staff/:id", async (req, res): Promise<void> => {
   await db.delete(staffMembersTable).where(eq(staffMembersTable.id, id));
   res.status(204).send();
 });
+// --- Site Settings ---
+router.get("/admin/settings", async (req, res): Promise<void> => {
+  if (!requireAdminToken(req, res)) return;
+  const rows = await db.select().from(siteSettingsTable);
+  const map: Record<string, string> = {};
+  for (const r of rows) map[r.key] = r.value;
+  if (!map.delivery_fee) map.delivery_fee = "500";
+  res.json(map);
+});
 
+router.patch("/admin/settings", async (req, res): Promise<void> => {
+  if (!requireAdminToken(req, res)) return;
+  const updates = req.body as Record<string, string>;
+  const now = new Date();
+  for (const [key, value] of Object.entries(updates)) {
+    if (typeof value !== "string") continue;
+    await db.insert(siteSettingsTable).values({ key, value, updatedAt: now })
+      .onConflictDoUpdate({ target: siteSettingsTable.key, set: { value, updatedAt: now } });
+  }
+  res.json({ ok: true });
+});
 export default router;
