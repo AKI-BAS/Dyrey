@@ -31,7 +31,6 @@ export default function Cart() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [fulfillment, setFulfillment] = useState<"pickup" | "delivery">("pickup");
   const [paymentMethod, setPaymentMethod] = useState<"online" | "pickup">("pickup");
-  const [deliveryFee, setDeliveryFee] = useState(500);
 // delivery fee loaded from API
 const [deliveryFee, setDeliveryFee] = useState(500);
 
