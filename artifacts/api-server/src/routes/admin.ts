@@ -65,7 +65,7 @@ router.get("/admin/analytics", async (req, res): Promise<void> => {
   const topProducts = Object.entries(productCount).sort((a, b) => b[1].count - a[1].count).slice(0, 8).map(([name, { count, revenue }]) => ({ name, count, revenue }));
   const statusCount: Record<string, number> = { pending: 0, confirmed: 0, completed: 0, cancelled: 0 };
   for (const a of appointments) { statusCount[a.status] = (statusCount[a.status] ?? 0) + 1; }
-  const totalRevenue = orders.reduce((sum, o) => sum + parseFloat(o.totalAmount), 0);
+  const totalRevenue = orders.filter(o => o.status !== "cancelled").reduce((sum, o) => sum + parseFloat(o.totalAmount), 0);
   res.json({ topServices, topProducts, statusCount, totalRevenue, orderCount: orders.length, appointmentCount: appointments.length });
 });
 
