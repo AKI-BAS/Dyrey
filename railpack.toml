@@ -1,0 +1,8 @@
+﻿[phases.install]
+cmds = ["npm install -g pnpm && pnpm install --no-frozen-lockfile --ignore-scripts"]
+
+[phases.build]
+cmds = ["pnpm rebuild esbuild && pnpm --filter @workspace/dyrey build && node artifacts/api-server/build.mjs"]
+
+[start]
+cmd = "node --enable-source-maps artifacts/api-server/dist/index.mjs"
