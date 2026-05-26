@@ -11,3 +11,5 @@ export * from "./siteNotifications";
 export * from "./siteContent";
 export * from "./staffMembers";
 export * from "./siteSettingsTable";
+
+export * from "./schema";
