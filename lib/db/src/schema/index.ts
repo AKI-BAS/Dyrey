@@ -10,6 +10,4 @@ export * from "./restockNotifications";
 export * from "./siteNotifications";
 export * from "./siteContent";
 export * from "./staffMembers";
-
-
-export * from "./siteSettings";
+export * from "./siteSettingsTable";
