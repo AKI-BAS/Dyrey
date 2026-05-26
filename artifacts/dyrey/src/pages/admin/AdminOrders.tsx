@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Truck, Store, CreditCard, Banknote, CheckCircle2, Trash2 } from "lucide-react";
+import { Search, Truck, Store, CreditCard, Banknote, CheckCircle2, Trash2, ChevronDown, ChevronUp, Package } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -47,6 +47,7 @@ export default function AdminOrders() {
   const [search, setSearch] = useState("");
   const [fulfillmentFilter, setFulfillmentFilter] = useState("all");
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
   const isOwner = localStorage.getItem("staff_role") === "owner";
 
   const filtered = (orders ?? []).filter(o => {
@@ -129,78 +130,145 @@ export default function AdminOrders() {
                   const order = o as any;
                   const paymentStatus = order.paymentStatus ?? "unpaid";
                   return (
-                    <div key={o.id} className="p-4 space-y-3">
-                      <div className="flex items-start justify-between gap-4 flex-wrap">
-                        <div className="space-y-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="font-semibold text-sm">Order #{o.id}</p>
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[o.status] ?? "bg-slate-100 text-slate-700"}`}>
-                              {STATUS_OPTIONS.find(s => s.value === o.status)?.label ?? o.status}
-                            </span>
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1 ${PAYMENT_STATUS_COLORS[paymentStatus] ?? ""}`}>
-                              {paymentStatus === "paid" ? <CheckCircle2 className="h-3 w-3" /> : null}
-                              {paymentStatus === "paid" ? "Paid" : paymentStatus === "awaiting_online" ? "Awaiting Online" : "Unpaid"}
-                            </span>
-                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 flex items-center gap-1">
-                              {order.fulfillmentType === "delivery" ? <Truck className="h-3 w-3" /> : <Store className="h-3 w-3" />}
-                              {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"}
-                            </span>
-                            <span className="text-xs text-slate-400 flex items-center gap-1">
-                              {order.paymentMethod === "online" ? <CreditCard className="h-3 w-3" /> : <Banknote className="h-3 w-3" />}
-                              {order.paymentMethod === "online" ? "Online" : "On Pickup"}
-                            </span>
-                          </div>
-                          <p className="text-sm text-slate-600">{o.customerName} · {o.customerEmail}{o.customerPhone ? ` · ${o.customerPhone}` : ""}</p>
-                          {order.deliveryAddress && (
-                            <p className="text-xs text-slate-500 flex items-center gap-1"><Truck className="h-3 w-3" /> {order.deliveryAddress}</p>
-                          )}
-                          <div className="text-xs text-slate-400">
-                            {(o.items as Array<{ productName: string; quantity: number; unitPrice: number }>).map((item, i) => (
-                              <span key={i}>{item.productName} ×{item.quantity}{i < o.items.length - 1 ? ", " : ""}</span>
-                            ))}
-                          </div>
-                          <p className="text-xs text-slate-500">
-                            {isOwner && `Total: ${o.totalAmount.toLocaleString()} kr.${order.deliveryFee > 0 ? ` (incl. ${order.deliveryFee} kr. delivery)` : ""} · `}
-                            {format(new Date(o.createdAt), "PPp")}
-                          </p>
-                        </div>
-                        <div className="flex flex-col gap-2 shrink-0">
-                          <Select value={o.status} onValueChange={val => handleStatus(o.id, val)} disabled={updateOrder.isPending}>
-                            <SelectTrigger className="h-8 text-xs w-44"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {STATUS_OPTIONS.map(s => (
-                                <SelectItem key={s.value} value={s.value} className="text-xs">{s.label}</SelectItem>
+                    <div key={o.id} className="divide-y">
+                      {/* ── Summary row (always visible, clickable to expand) ── */}
+                      <button
+                        className="w-full text-left p-4 hover:bg-slate-50/70 transition-colors"
+                        onClick={() => setExpandedId(expandedId === o.id ? null : o.id)}
+                      >
+                        <div className="flex items-center justify-between gap-4 flex-wrap">
+                          <div className="space-y-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-semibold text-sm">Order #{o.id}</p>
+                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[o.status] ?? "bg-slate-100 text-slate-700"}`}>
+                                {STATUS_OPTIONS.find(s => s.value === o.status)?.label ?? o.status}
+                              </span>
+                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1 ${PAYMENT_STATUS_COLORS[paymentStatus] ?? ""}`}>
+                                {paymentStatus === "paid" ? <CheckCircle2 className="h-3 w-3" /> : null}
+                                {paymentStatus === "paid" ? "Paid" : paymentStatus === "awaiting_online" ? "Awaiting Online" : "Unpaid"}
+                              </span>
+                              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 flex items-center gap-1">
+                                {order.fulfillmentType === "delivery" ? <Truck className="h-3 w-3" /> : <Store className="h-3 w-3" />}
+                                {order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"}
+                              </span>
+                              <span className="text-xs text-slate-400 flex items-center gap-1">
+                                {order.paymentMethod === "online" ? <CreditCard className="h-3 w-3" /> : <Banknote className="h-3 w-3" />}
+                                {order.paymentMethod === "online" ? "Online" : "On Pickup"}
+                              </span>
+                            </div>
+                            <p className="text-sm text-slate-600">{o.customerName} · {o.customerEmail}{(o as any).customerPhone ? ` · ${(o as any).customerPhone}` : ""}</p>
+                            <p className="text-xs text-slate-400">
+                              {(o.items as Array<{ productName: string; quantity: number }>).map((item, i) => (
+                                <span key={i}>{item.productName} ×{item.quantity}{i < o.items.length - 1 ? ", " : ""}</span>
                               ))}
-                            </SelectContent>
-                          </Select>
-                          <Select value={paymentStatus} onValueChange={val => handleMarkPaid(o.id, val)}>
-                            <SelectTrigger className={`h-8 text-xs w-44 font-medium ${PAYMENT_STATUS_COLORS[paymentStatus] ?? ""}`}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="unpaid" className="text-xs">Not Paid</SelectItem>
-                              <SelectItem value="awaiting_online" className="text-xs">Awaiting Online</SelectItem>
-                              <SelectItem value="paid" className="text-xs">Payment Completed</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          {isOwner && (
-                            confirmDeleteId === o.id ? (
-                              <div className="flex gap-1">
-                                <Button size="sm" variant="destructive" className="h-8 text-xs flex-1" onClick={() => handleDelete(o.id)}>
-                                  Confirm
-                                </Button>
-                                <Button size="sm" variant="outline" className="h-8 text-xs flex-1" onClick={() => setConfirmDeleteId(null)}>
-                                  Cancel
-                                </Button>
-                              </div>
-                            ) : (
-                              <Button size="sm" variant="outline" className="text-red-500 border-red-200 hover:bg-red-50 h-8 text-xs" onClick={() => setConfirmDeleteId(o.id)}>
-                                <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete Order
-                              </Button>
-                            )
-                          )}
+                            </p>
+                            <p className="text-xs text-slate-400">{format(new Date(o.createdAt), "PPp")}</p>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            {isOwner && (
+                              <p className="text-sm font-semibold text-slate-700">{o.totalAmount.toLocaleString()} kr.</p>
+                            )}
+                            {expandedId === o.id ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+                          </div>
                         </div>
-                      </div>
+                      </button>
+
+                      {/* ── Expanded details ── */}
+                      {expandedId === o.id && (
+                        <div className="bg-slate-50/60 p-4 space-y-4">
+
+                          {/* Product list with images */}
+                          <div>
+                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Items</p>
+                            <div className="space-y-2">
+                              {(o.items as Array<{ productId: number; productName: string; quantity: number; unitPrice: number; imageUrl?: string }>).map((item, i) => (
+                                <div key={i} className="flex items-center gap-3 bg-white rounded-lg border border-slate-100 p-3">
+                                  <div className="h-14 w-14 rounded-md border bg-slate-50 flex items-center justify-center shrink-0 overflow-hidden">
+                                    {item.imageUrl
+                                      ? <img src={item.imageUrl} alt={item.productName} className="h-full w-full object-contain p-1" />
+                                      : <Package className="h-6 w-6 text-slate-300" />}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-slate-800 truncate">{item.productName}</p>
+                                    <p className="text-xs text-slate-500">{item.unitPrice.toLocaleString()} kr. × {item.quantity}</p>
+                                  </div>
+                                  <p className="text-sm font-semibold text-slate-700 shrink-0">{(item.unitPrice * item.quantity).toLocaleString()} kr.</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Totals */}
+                          {isOwner && (
+                            <div className="bg-white rounded-lg border border-slate-100 p-3 space-y-1 text-sm">
+                              <div className="flex justify-between text-slate-500">
+                                <span>Subtotal</span>
+                                <span>{(o.totalAmount - (order.deliveryFee ?? 0)).toLocaleString()} kr.</span>
+                              </div>
+                              {order.deliveryFee > 0 && (
+                                <div className="flex justify-between text-slate-500">
+                                  <span>Delivery fee</span>
+                                  <span>{order.deliveryFee.toLocaleString()} kr.</span>
+                                </div>
+                              )}
+                              <div className="flex justify-between font-semibold text-slate-800 border-t pt-1 mt-1">
+                                <span>Total</span>
+                                <span>{o.totalAmount.toLocaleString()} kr.</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Customer & delivery info */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-600">
+                            <div className="bg-white rounded-lg border border-slate-100 p-3 space-y-1">
+                              <p className="font-semibold text-slate-500 uppercase tracking-wide text-xs mb-1">Customer</p>
+                              <p>{o.customerName}</p>
+                              <p>{o.customerEmail}</p>
+                              {(o as any).customerPhone && <p>{(o as any).customerPhone}</p>}
+                            </div>
+                            {order.deliveryAddress && (
+                              <div className="bg-white rounded-lg border border-slate-100 p-3 space-y-1">
+                                <p className="font-semibold text-slate-500 uppercase tracking-wide text-xs mb-1">Delivery Address</p>
+                                <p>{order.deliveryAddress}</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            <Select value={o.status} onValueChange={val => handleStatus(o.id, val)} disabled={updateOrder.isPending}>
+                              <SelectTrigger className="h-8 text-xs w-44"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {STATUS_OPTIONS.map(s => (
+                                  <SelectItem key={s.value} value={s.value} className="text-xs">{s.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Select value={paymentStatus} onValueChange={val => handleMarkPaid(o.id, val)}>
+                              <SelectTrigger className={`h-8 text-xs w-44 font-medium ${PAYMENT_STATUS_COLORS[paymentStatus] ?? ""}`}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="unpaid" className="text-xs">Not Paid</SelectItem>
+                                <SelectItem value="awaiting_online" className="text-xs">Awaiting Online</SelectItem>
+                                <SelectItem value="paid" className="text-xs">Payment Completed</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {isOwner && (
+                              confirmDeleteId === o.id ? (
+                                <div className="flex gap-1">
+                                  <Button size="sm" variant="destructive" className="h-8 text-xs" onClick={() => handleDelete(o.id)}>Confirm Delete</Button>
+                                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setConfirmDeleteId(null)}>Cancel</Button>
+                                </div>
+                              ) : (
+                                <Button size="sm" variant="outline" className="text-red-500 border-red-200 hover:bg-red-50 h-8 text-xs ml-auto" onClick={() => setConfirmDeleteId(o.id)}>
+                                  <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete Order
+                                </Button>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
