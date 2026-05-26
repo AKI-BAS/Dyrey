@@ -12,3 +12,4 @@ export * from "./siteContent";
 export * from "./staffMembers";
 
 
+export * from "./siteSettings";
