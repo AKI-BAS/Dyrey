@@ -6,3 +6,5 @@ export const siteSettingsTable = pgTable("site_settings", {
   value: text("value").notNull(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+
+
