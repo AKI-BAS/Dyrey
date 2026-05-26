@@ -93,6 +93,9 @@ export default function AdminOrders() {
       setConfirmDeleteId(null);
     }
   };
+
+  return (
+    <AdminLayout>
       <div className="space-y-6 max-w-5xl">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Orders</h1>
