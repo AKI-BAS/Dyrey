@@ -6,17 +6,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Truck, Store, CreditCard, Banknote, CheckCircle2 } from "lucide-react";
+import { Search, Truck, Store, CreditCard, Banknote, CheckCircle2 } from "lucide-react"; // CheckCircle2 used in payment badge
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-
+ 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
-
+ 
 function adminHeaders() {
   const token = localStorage.getItem("admin_token") ?? "";
   return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 }
-
+ 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
   ready: "bg-blue-100 text-blue-800",
@@ -24,7 +24,7 @@ const STATUS_COLORS: Record<string, string> = {
   completed: "bg-green-100 text-green-800",
   cancelled: "bg-red-100 text-red-800",
 };
-
+ 
 const STATUS_OPTIONS = [
   { value: "pending", label: "Pending" },
   { value: "ready", label: "Ready" },
@@ -32,13 +32,13 @@ const STATUS_OPTIONS = [
   { value: "completed", label: "Completed" },
   { value: "cancelled", label: "Cancelled" },
 ];
-
+ 
 const PAYMENT_STATUS_COLORS: Record<string, string> = {
   unpaid: "bg-red-100 text-red-700",
   awaiting_online: "bg-amber-100 text-amber-700",
   paid: "bg-green-100 text-green-700",
 };
-
+ 
 export default function AdminOrders() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -47,13 +47,13 @@ export default function AdminOrders() {
   const [search, setSearch] = useState("");
   const [fulfillmentFilter, setFulfillmentFilter] = useState("all");
   const isOwner = localStorage.getItem("staff_role") === "owner";
-
+ 
   const filtered = (orders ?? []).filter(o => {
     const matchSearch = !search || o.customerName.toLowerCase().includes(search.toLowerCase()) || o.customerEmail.toLowerCase().includes(search.toLowerCase());
     const matchFulfillment = fulfillmentFilter === "all" || (o as any).fulfillmentType === fulfillmentFilter;
     return matchSearch && matchFulfillment;
   });
-
+ 
   const handleStatus = async (id: number, status: string) => {
     try {
       await updateOrder.mutateAsync({ id, data: { status } });
@@ -63,21 +63,21 @@ export default function AdminOrders() {
       toast({ title: "Error", description: "Failed to update order.", variant: "destructive" });
     }
   };
-
-  const handleMarkPaid = async (id: number) => {
+ 
+  const handleMarkPaid = async (id: number, paymentStatus: string) => {
     try {
       await fetch(`${basePath}/api/orders/${id}`, {
         method: "PATCH",
         headers: adminHeaders(),
-        body: JSON.stringify({ paymentStatus: "paid" }),
+        body: JSON.stringify({ paymentStatus }),
       });
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      toast({ title: "Marked as paid" });
+      toast({ title: paymentStatus === "paid" ? "Marked as paid" : "Payment status updated" });
     } catch {
       toast({ title: "Error", variant: "destructive" });
     }
   };
-
+ 
   return (
     <AdminLayout>
       <div className="space-y-6 max-w-5xl">
@@ -85,7 +85,7 @@ export default function AdminOrders() {
           <h1 className="text-2xl font-bold text-slate-900">Orders</h1>
           <p className="text-slate-500 text-sm mt-1">Manage shop orders</p>
         </div>
-
+ 
         <div className="flex gap-3 flex-wrap">
           <div className="relative flex-1 min-w-48">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -100,7 +100,7 @@ export default function AdminOrders() {
             </SelectContent>
           </Select>
         </div>
-
+ 
         <Card>
           <CardContent className="p-0">
             {isLoading ? (
@@ -157,11 +157,19 @@ export default function AdminOrders() {
                               ))}
                             </SelectContent>
                           </Select>
-                          {paymentStatus !== "paid" && (
-                            <Button size="sm" variant="outline" className="text-green-600 border-green-200 hover:bg-green-50 h-8 text-xs" onClick={() => handleMarkPaid(o.id)}>
-                              <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Mark Paid
-                            </Button>
-                          )}
+                          <Select
+                            value={paymentStatus}
+                            onValueChange={val => handleMarkPaid(o.id, val)}
+                          >
+                            <SelectTrigger className={`h-8 text-xs w-44 font-medium ${PAYMENT_STATUS_COLORS[paymentStatus] ?? ""}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="unpaid" className="text-xs">Not Paid</SelectItem>
+                              <SelectItem value="awaiting_online" className="text-xs">Awaiting Online</SelectItem>
+                              <SelectItem value="paid" className="text-xs">Payment Completed</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                     </div>

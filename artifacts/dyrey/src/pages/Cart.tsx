@@ -14,16 +14,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-
+ 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
-
+ 
 const formSchema = z.object({
   customerName: z.string().min(2, "Name is required"),
   customerEmail: z.string().email("Valid email is required"),
   customerPhone: z.string().optional(),
   deliveryAddress: z.string().optional(),
 });
-
+ 
 export default function Cart() {
   const { toast } = useToast();
   const t = useT();
@@ -31,25 +31,31 @@ export default function Cart() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [fulfillment, setFulfillment] = useState<"pickup" | "delivery">("pickup");
   const [paymentMethod, setPaymentMethod] = useState<"online" | "pickup">("pickup");
+ 
+  const handleFulfillmentChange = (value: "pickup" | "delivery") => {
+    setFulfillment(value);
+    if (value === "delivery") setPaymentMethod("online");
+    else setPaymentMethod("pickup");
+  };
 // delivery fee loaded from API
 const [deliveryFee, setDeliveryFee] = useState(500);
-
+ 
   const createOrder = useCreateOrder();
-
+ 
   useEffect(() => {
     fetch(`${basePath}/api/orders/delivery-fee`)
       .then(r => r.json())
       .then(d => setDeliveryFee(d.deliveryFee))
       .catch(() => {});
   }, []);
-
+ 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: { customerName: "", customerEmail: "", customerPhone: "", deliveryAddress: "" },
   });
-
+ 
   const grandTotal = totalPrice + (fulfillment === "delivery" ? deliveryFee : 0);
-
+ 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (items.length === 0) return;
     if (fulfillment === "delivery" && !values.deliveryAddress?.trim()) {
@@ -75,7 +81,7 @@ const [deliveryFee, setDeliveryFee] = useState(500);
       toast({ title: "Error", description: "Failed to place order. Please try again.", variant: "destructive" });
     }
   };
-
+ 
   if (isSuccess) {
     return (
       <div className="container mx-auto px-4 py-20 text-center max-w-lg">
@@ -95,7 +101,7 @@ const [deliveryFee, setDeliveryFee] = useState(500);
       </div>
     );
   }
-
+ 
   if (items.length === 0) {
     return (
       <div className="container mx-auto px-4 py-20 text-center max-w-lg">
@@ -106,11 +112,11 @@ const [deliveryFee, setDeliveryFee] = useState(500);
       </div>
     );
   }
-
+ 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
       <h1 className="text-3xl font-bold tracking-tight mb-8">{t("cart_title")}</h1>
-
+ 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
         {/* Cart items */}
         <div className="lg:col-span-2 space-y-6">
@@ -159,21 +165,21 @@ const [deliveryFee, setDeliveryFee] = useState(500);
             </ul>
           </div>
         </div>
-
+ 
         {/* Order summary + form */}
         <div className="lg:col-span-1">
           <Card className="sticky top-24 shadow-sm border-border">
             <CardContent className="p-6 space-y-6">
               <h2 className="text-xl font-bold">{t("cart_summary")}</h2>
-
+ 
               {/* Fulfillment */}
               <div className="space-y-2">
                 <p className="text-sm font-medium">Fulfillment</p>
                 <div className="grid grid-cols-2 gap-2">
-                  <button onClick={() => setFulfillment("pickup")} className={cn("flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors", fulfillment === "pickup" ? "border-primary bg-primary/5 text-primary" : "border-slate-200 text-slate-600 hover:border-slate-300")}>
+                  <button onClick={() => handleFulfillmentChange("pickup")} className={cn("flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors", fulfillment === "pickup" ? "border-primary bg-primary/5 text-primary" : "border-slate-200 text-slate-600 hover:border-slate-300")}>
                     <Store className="h-4 w-4" /> Pickup
                   </button>
-                  <button onClick={() => setFulfillment("delivery")} className={cn("flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors", fulfillment === "delivery" ? "border-primary bg-primary/5 text-primary" : "border-slate-200 text-slate-600 hover:border-slate-300")}>
+                  <button onClick={() => handleFulfillmentChange("delivery")} className={cn("flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors", fulfillment === "delivery" ? "border-primary bg-primary/5 text-primary" : "border-slate-200 text-slate-600 hover:border-slate-300")}>
                     <Truck className="h-4 w-4" /> Delivery
                   </button>
                 </div>
@@ -181,23 +187,29 @@ const [deliveryFee, setDeliveryFee] = useState(500);
                   <p className="text-xs text-slate-500">Delivery fee: {deliveryFee.toLocaleString()} kr.</p>
                 )}
               </div>
-
+ 
               {/* Payment */}
               <div className="space-y-2">
                 <p className="text-sm font-medium">Payment</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <button onClick={() => setPaymentMethod("pickup")} className={cn("flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors", paymentMethod === "pickup" ? "border-primary bg-primary/5 text-primary" : "border-slate-200 text-slate-600 hover:border-slate-300")}>
-                    <Banknote className="h-4 w-4" /> On Pickup
-                  </button>
-                  <button onClick={() => setPaymentMethod("online")} className={cn("flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors", paymentMethod === "online" ? "border-primary bg-primary/5 text-primary" : "border-slate-200 text-slate-600 hover:border-slate-300")}>
-                    <CreditCard className="h-4 w-4" /> Online
-                  </button>
-                </div>
+                {fulfillment === "delivery" ? (
+                  <div className="flex items-center gap-2 p-3 rounded-lg border border-primary bg-primary/5 text-primary text-sm font-medium">
+                    <CreditCard className="h-4 w-4" /> Online Payment Required
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={() => setPaymentMethod("pickup")} className={cn("flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors", paymentMethod === "pickup" ? "border-primary bg-primary/5 text-primary" : "border-slate-200 text-slate-600 hover:border-slate-300")}>
+                      <Banknote className="h-4 w-4" /> On Pickup
+                    </button>
+                    <button onClick={() => setPaymentMethod("online")} className={cn("flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors", paymentMethod === "online" ? "border-primary bg-primary/5 text-primary" : "border-slate-200 text-slate-600 hover:border-slate-300")}>
+                      <CreditCard className="h-4 w-4" /> Online
+                    </button>
+                  </div>
+                )}
                 {paymentMethod === "online" && (
                   <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">Online payment coming soon — we'll contact you to confirm.</p>
                 )}
               </div>
-
+ 
               {/* Totals */}
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-muted-foreground">
@@ -216,7 +228,7 @@ const [deliveryFee, setDeliveryFee] = useState(500);
                   <span>{grandTotal.toLocaleString()} kr.</span>
                 </div>
               </div>
-
+ 
               {/* Customer form */}
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
