@@ -1,8 +1,16 @@
 import {
   db, appointmentsTable, ordersTable, scheduleCapacityTable, staffNotepadTable,
   staffNotesTable, siteNotificationsTable, siteContentTable, restockNotificationsTable,
-  staffMembersTable, siteSettingsTable,
+  staffMembersTable,
 } from "@workspace/db";
+import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+
+const siteSettingsTable = pgTable("site_settings", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
 import { Router, type IRouter } from "express";
 import { eq, sql, desc, and } from "drizzle-orm";
 import { AdminLoginBody, AdminLoginResponse, GetAdminMeResponse } from "@workspace/api-zod";
