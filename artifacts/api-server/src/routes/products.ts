@@ -130,20 +130,6 @@ router.get("/site-content", async (req, res): Promise<void> => {
   res.json(map);
 });
 
-export default router;
-
-// Public: staff listing for About page
-import { staffMembersTable as _staffMembersTable } from "@workspace/db";
-router.get("/staff", async (req, res): Promise<void> => {
-  const rows = await db.select().from(_staffMembersTable).orderBy(_staffMembersTable.name);
-  res.json(rows.map(r => ({
-    id: r.id,
-    name: r.name,
-    role: r.role,
-    bio: r.bio ?? null,
-    photoUrl: r.photoUrl ?? null,
-  })));
-
 // Public: staff listing for About page
 router.get("/staff", async (req, res): Promise<void> => {
   const staff = await db.select().from(staffMembersTable).orderBy(staffMembersTable.name);
