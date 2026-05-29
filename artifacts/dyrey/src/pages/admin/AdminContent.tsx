@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Bell, Loader2, Check, Megaphone, Save } from "lucide-react";
+import { Plus, Pencil, Trash2, Bell, Loader2, Check, Megaphone, Save, Phone, Mail, MapPin, PhoneCall, BookOpen, Info } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -383,87 +384,291 @@ export default function AdminContent() {
   const openNewNotif = () => { setEditingNotif(null); setNotifDialogOpen(true); };
   const invalidateNotifs = () => queryClient.invalidateQueries({ queryKey: ["admin", "site-notifications"] });
 
+  // ─── Contact & About field helpers ──────────────────────────────────────────
+  const cf = (key: string, fallback = "") => contentDraft[key] ?? fallback;
+  const setField = (key: string, v: string) => handleContentChange(key, v);
+
+  const SaveBar = () => (
+    <div className="flex justify-end pt-2">
+      <Button
+        size="sm"
+        variant={contentSaved ? "outline" : "default"}
+        onClick={handleSaveContent}
+        disabled={contentSaving}
+        className="gap-1.5 min-w-[130px]"
+      >
+        {contentSaving ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : contentSaved ? (
+          <><Check className="h-3.5 w-3.5 text-green-600" /> Saved</>
+        ) : (
+          <><Save className="h-3.5 w-3.5" /> Save Changes</>
+        )}
+      </Button>
+    </div>
+  );
+
   return (
     <AdminLayout>
-      <div className="space-y-8 max-w-4xl">
+      <div className="space-y-6 max-w-4xl">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Edit Website</h1>
-          <p className="text-slate-500 text-sm mt-1">Edit the homepage hero and manage customer banner notifications</p>
+          <p className="text-slate-500 text-sm mt-1">Manage all public-facing content from here</p>
         </div>
 
-        {/* ─── Hero Editor ─── */}
-        <HeroEditor
-          draft={contentDraft}
-          onChange={handleContentChange}
-          onSave={handleSaveContent}
-          saving={contentSaving}
-          saved={contentSaved}
-        />
+        <Tabs defaultValue="homepage">
+          <TabsList className="mb-6">
+            <TabsTrigger value="homepage">Homepage</TabsTrigger>
+            <TabsTrigger value="contact">Contact Page</TabsTrigger>
+            <TabsTrigger value="about">About Page</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          </TabsList>
 
-        {/* ─── Customer Notifications ─── */}
-        <Card>
-          <CardHeader className="pb-3 border-b">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <Megaphone className="h-4 w-4 text-primary" />
+          {/* ─── Homepage ─── */}
+          <TabsContent value="homepage" className="space-y-6 mt-0">
+            <HeroEditor
+              draft={contentDraft}
+              onChange={handleContentChange}
+              onSave={handleSaveContent}
+              saving={contentSaving}
+              saved={contentSaved}
+            />
+          </TabsContent>
+
+          {/* ─── Contact Page ─── */}
+          <TabsContent value="contact" className="space-y-6 mt-0">
+            <Card>
+              <CardHeader className="pb-3 border-b">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <Phone className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Contact Page</CardTitle>
+                    <p className="text-xs text-slate-400 mt-0.5">Shown at <code className="bg-slate-100 px-1 rounded">/contact</code> — update phone numbers and hours here</p>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-base">Customer Notifications</CardTitle>
-                  <p className="text-xs text-slate-400 mt-0.5">Active ones appear as a banner on the public site</p>
-                </div>
-              </div>
-              <Button size="sm" onClick={openNewNotif} className="gap-1.5">
-                <Plus className="h-3.5 w-3.5" /> New
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            {loadingNotifs ? (
-              <p className="p-6 text-sm text-slate-400">Loading…</p>
-            ) : !notifications?.length ? (
-              <div className="p-8 text-center text-slate-400">
-                <Bell className="h-8 w-8 mx-auto opacity-30 mb-2" />
-                <p className="text-sm">No notifications yet</p>
-                <p className="text-xs mt-1">Create one to show a banner to customers</p>
-              </div>
-            ) : (
-              <div className="divide-y">
-                {notifications.map(n => {
-                  const cfg = NOTIF_TYPES[n.type] ?? NOTIF_TYPES.info;
-                  return (
-                    <div key={n.id} className="p-4 flex items-start gap-4">
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge variant="outline" className={`text-xs ${cfg.color}`}>{cfg.label}</Badge>
-                          {!n.isActive && <Badge variant="outline" className="text-xs text-slate-400">Inactive</Badge>}
-                          {n.expiresAt && (
-                            <span className="text-xs text-slate-400">
-                              Expires {new Date(n.expiresAt).toLocaleDateString()}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-slate-700">{n.message}</p>
-                      </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-slate-500">{n.isActive ? "Active" : "Off"}</span>
-                          <Switch checked={n.isActive} onCheckedChange={() => handleToggleNotif(n)} />
-                        </div>
-                        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEditNotif(n)}>
-                          <Pencil className="h-3.5 w-3.5 text-slate-400" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 hover:text-red-500 hover:bg-red-50" onClick={() => handleDeleteNotif(n.id)}>
-                          <Trash2 className="h-3.5 w-3.5 text-slate-400" />
-                        </Button>
-                      </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+
+                {/* Shop */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center">
+                      <Phone className="h-3.5 w-3.5 text-primary" />
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                    Shop
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-8">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-500">Phone number</label>
+                      <input className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                        value={cf("contact_shop_phone", "+354 460 0000")}
+                        onChange={e => setField("contact_shop_phone", e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-500">Opening hours</label>
+                      <input className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                        value={cf("contact_shop_hours", "Mon–Fri 09:00–18:00 · Sat 10:00–15:00")}
+                        onChange={e => setField("contact_shop_hours", e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t" />
+
+                {/* Appointments */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <div className="h-6 w-6 rounded bg-blue-100 flex items-center justify-center">
+                      <Phone className="h-3.5 w-3.5 text-blue-600" />
+                    </div>
+                    Appointments
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-8">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-500">Phone number</label>
+                      <input className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                        value={cf("contact_appt_phone", "+354 460 0001")}
+                        onChange={e => setField("contact_appt_phone", e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-500">Opening hours</label>
+                      <input className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                        value={cf("contact_appt_hours", "Mon–Fri 08:00–17:00")}
+                        onChange={e => setField("contact_appt_hours", e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t" />
+
+                {/* Duty / on-call */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <div className="h-6 w-6 rounded bg-amber-100 flex items-center justify-center">
+                      <PhoneCall className="h-3.5 w-3.5 text-amber-700" />
+                    </div>
+                    Duty / On-call number
+                  </div>
+                  <p className="text-xs text-slate-400 pl-8">Update this each week/shift when the duty number changes</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-8">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-500">Current duty number</label>
+                      <input className="flex h-9 w-full rounded-md border border-amber-300 bg-amber-50 px-3 py-1 text-sm shadow-sm font-semibold"
+                        value={cf("contact_duty_phone", "+354 460 0002")}
+                        onChange={e => setField("contact_duty_phone", e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-500">Label (e.g. "Duty number this week")</label>
+                      <input className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                        value={cf("contact_duty_label", "Duty number (this week)")}
+                        onChange={e => setField("contact_duty_label", e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <label className="text-xs font-medium text-slate-500">Subtext under duty number</label>
+                      <input className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                        value={cf("contact_duty_note", "For urgent cases outside opening hours")}
+                        onChange={e => setField("contact_duty_note", e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t" />
+
+                {/* General */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <div className="h-6 w-6 rounded bg-emerald-100 flex items-center justify-center">
+                      <MapPin className="h-3.5 w-3.5 text-emerald-600" />
+                    </div>
+                    Address & Email
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-8">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-500">Address</label>
+                      <input className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                        value={cf("contact_address", "Eyjafjarðarbraut, Akureyri")}
+                        onChange={e => setField("contact_address", e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-500">Email</label>
+                      <input className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                        value={cf("contact_email", "info@dyrey.is")}
+                        onChange={e => setField("contact_email", e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+
+                <SaveBar />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ─── About Page ─── */}
+          <TabsContent value="about" className="space-y-6 mt-0">
+            <Card>
+              <CardHeader className="pb-3 border-b">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <Info className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">About Page</CardTitle>
+                    <p className="text-xs text-slate-400 mt-0.5">Shown at <code className="bg-slate-100 px-1 rounded">/about</code> — the team section is managed under Staff</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-500">Page heading</label>
+                  <input className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                    value={cf("about_title", "About Dýrey")}
+                    onChange={e => setField("about_title", e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-500">About text</label>
+                  <textarea
+                    rows={8}
+                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm resize-none"
+                    value={cf("about_body", "Dýrey Veterinary provides compassionate, modern care for animals across Eyjafjörður.")}
+                    onChange={e => setField("about_body", e.target.value)}
+                    placeholder="Write about the clinic, its history, values…"
+                  />
+                  <p className="text-xs text-slate-400">Line breaks are preserved. Staff photos and bios are edited on the <strong>Staff</strong> page.</p>
+                </div>
+                <SaveBar />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ─── Notifications ─── */}
+          <TabsContent value="notifications" className="mt-0">
+            <Card>
+              <CardHeader className="pb-3 border-b">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 bg-primary/10 rounded-lg flex items-center justify-center">
+                      <Megaphone className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base">Customer Notifications</CardTitle>
+                      <p className="text-xs text-slate-400 mt-0.5">Active ones appear as a banner on the public site</p>
+                    </div>
+                  </div>
+                  <Button size="sm" onClick={openNewNotif} className="gap-1.5">
+                    <Plus className="h-3.5 w-3.5" /> New
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {loadingNotifs ? (
+                  <p className="p-6 text-sm text-slate-400">Loading…</p>
+                ) : !notifications?.length ? (
+                  <div className="p-8 text-center text-slate-400">
+                    <Bell className="h-8 w-8 mx-auto opacity-30 mb-2" />
+                    <p className="text-sm">No notifications yet</p>
+                    <p className="text-xs mt-1">Create one to show a banner to customers</p>
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {notifications.map(n => {
+                      const cfg = NOTIF_TYPES[n.type] ?? NOTIF_TYPES.info;
+                      return (
+                        <div key={n.id} className="p-4 flex items-start gap-4">
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge variant="outline" className={`text-xs ${cfg.color}`}>{cfg.label}</Badge>
+                              {!n.isActive && <Badge variant="outline" className="text-xs text-slate-400">Inactive</Badge>}
+                              {n.expiresAt && (
+                                <span className="text-xs text-slate-400">
+                                  Expires {new Date(n.expiresAt).toLocaleDateString()}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-slate-700">{n.message}</p>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-slate-500">{n.isActive ? "Active" : "Off"}</span>
+                              <Switch checked={n.isActive} onCheckedChange={() => handleToggleNotif(n)} />
+                            </div>
+                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEditNotif(n)}>
+                              <Pencil className="h-3.5 w-3.5 text-slate-400" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 hover:text-red-500 hover:bg-red-50" onClick={() => handleDeleteNotif(n.id)}>
+                              <Trash2 className="h-3.5 w-3.5 text-slate-400" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
       <NotifDialog

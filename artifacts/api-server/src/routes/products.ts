@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
-import { db, productsTable, restockNotificationsTable, siteNotificationsTable, siteContentTable } from "@workspace/db";
+import { db, productsTable, restockNotificationsTable, siteNotificationsTable, siteContentTable, staffMembersTable } from "@workspace/db";
 import {
   ListProductsResponse,
   ListProductsQueryParams,
@@ -128,6 +128,32 @@ router.get("/site-content", async (req, res): Promise<void> => {
   const map: Record<string, string> = {};
   for (const r of rows) map[r.key] = r.value;
   res.json(map);
+});
+
+export default router;
+
+// Public: staff listing for About page
+import { staffMembersTable as _staffMembersTable } from "@workspace/db";
+router.get("/staff", async (req, res): Promise<void> => {
+  const rows = await db.select().from(_staffMembersTable).orderBy(_staffMembersTable.name);
+  res.json(rows.map(r => ({
+    id: r.id,
+    name: r.name,
+    role: r.role,
+    bio: r.bio ?? null,
+    photoUrl: r.photoUrl ?? null,
+  })));
+
+// Public: staff listing for About page
+router.get("/staff", async (req, res): Promise<void> => {
+  const staff = await db.select().from(staffMembersTable).orderBy(staffMembersTable.name);
+  res.json(staff.map(r => ({
+    id: r.id,
+    name: r.name,
+    role: r.role,
+    bio: r.bio ?? null,
+    photoUrl: r.photoUrl ?? null,
+  })));
 });
 
 export default router;

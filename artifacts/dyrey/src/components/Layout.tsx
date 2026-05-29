@@ -295,7 +295,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <li><Link href="/book" className="hover:text-primary transition-colors">{t("footer_bookAppointment")}</Link></li>
                 <li><Link href="/appointments" className="hover:text-primary transition-colors">{t("footer_myAppointments")}</Link></li>
                 <li>{t("footer_services")}</li>
-                <li>{t("footer_ourTeam")}</li>
+                <li><Link href="/about" className="hover:text-primary transition-colors">{t("footer_ourTeam")}</Link></li>
               </ul>
             </div>
             <div>
@@ -310,10 +310,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div>
               <h3 className="font-medium mb-4">{t("footer_contact")}</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>info@dyrey.is</li>
-                <li>+354 460 0000</li>
+                <li><Link href="/contact" className="hover:text-primary transition-colors">info@dyrey.is</Link></li>
+                <li><Link href="/contact" className="hover:text-primary transition-colors">+354 460 0000</Link></li>
                 <li>Eyjafjarðarbraut, Akureyri</li>
-                <li>{t("footer_hours")}</li>
+                <li><Link href="/contact" className="hover:text-primary transition-colors">{t("footer_hours")}</Link></li>
               </ul>
             </div>
           </div>

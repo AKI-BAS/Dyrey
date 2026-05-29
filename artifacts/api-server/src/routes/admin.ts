@@ -233,9 +233,13 @@ router.patch("/admin/staff/:id", async (req, res): Promise<void> => {
   if (!requireAdminToken(req, res)) return;
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-  const { role } = req.body as { role: string };
-  if (!role) { res.status(400).json({ error: "role required" }); return; }
-  const [row] = await db.update(staffMembersTable).set({ role }).where(eq(staffMembersTable.id, id)).returning();
+  const { role, bio, photoUrl } = req.body as { role?: string; bio?: string; photoUrl?: string };
+  const set: Record<string, unknown> = {};
+  if (role !== undefined) set.role = role;
+  if (bio !== undefined) set.bio = bio;
+  if (photoUrl !== undefined) set.photoUrl = photoUrl;
+  if (Object.keys(set).length === 0) { res.status(400).json({ error: "Nothing to update" }); return; }
+  const [row] = await db.update(staffMembersTable).set(set).where(eq(staffMembersTable.id, id)).returning();
   if (!row) { res.status(404).json({ error: "Not found" }); return; }
   res.json({ ...row, createdAt: row.createdAt.toISOString() });
 });
@@ -269,3 +273,6 @@ router.patch("/admin/settings", async (req, res): Promise<void> => {
   res.json({ ok: true });
 });
 export default router;
+
+// ── Public staff listing (for About page) ──
+// This is added to the products router instead; see note below.
