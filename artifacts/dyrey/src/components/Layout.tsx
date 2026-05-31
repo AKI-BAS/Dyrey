@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { ShoppingCart, Menu, Home, Package, CalendarDays, CalendarIcon, LogIn, LogOut, User, ChevronDown, PawPrint, X, Bell } from "lucide-react";
+import { ShoppingCart, Menu, Home, Package, CalendarDays, CalendarIcon, LogIn, LogOut, User, ChevronDown, PawPrint, X, Bell, Phone } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useClerk, useUser } from "@clerk/react";
 import logoPath from "@assets/image_1778924453421.png";
@@ -8,6 +8,7 @@ import { useLanguage, useT } from "@/hooks/use-language";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
@@ -85,9 +86,35 @@ function LanguageToggle() {
   );
 }
 
+// ── Legal modal ───────────────────────────────────────────────────────────────
+function LegalModal({ open, onClose, title, body }: { open: boolean; onClose: () => void; title: string; body: string }) {
+  // Render **bold** markers as bold spans
+  const renderBody = (text: string) =>
+    text.split(/(\*\*[^*]+\*\*)/).map((part, i) =>
+      part.startsWith("**") ? <strong key={i}>{part.slice(2, -2)}</strong> : <span key={i}>{part}</span>
+    );
+
+  return (
+    <Dialog open={open} onOpenChange={o => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <div className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed space-y-1">
+          {body.split("\n").map((line, i) => (
+            <p key={i}>{renderBody(line)}</p>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
   const items = useCart((state) => state.items);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const { user, isLoaded } = useUser();
@@ -100,6 +127,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: t("nav_book"), href: "/book", icon: CalendarIcon },
     { name: t("nav_appointments"), href: "/appointments", icon: CalendarDays },
     { name: t("nav_orders"), href: "/orders", icon: Package },
+    { name: t("nav_contact"), href: "/contact", icon: Phone },
   ];
 
   const handleSignOut = () => {
@@ -294,7 +322,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li><Link href="/book" className="hover:text-primary transition-colors">{t("footer_bookAppointment")}</Link></li>
                 <li><Link href="/appointments" className="hover:text-primary transition-colors">{t("footer_myAppointments")}</Link></li>
-                <li>{t("footer_services")}</li>
+                <li><Link href="/book" className="hover:text-primary transition-colors">{t("footer_services")}</Link></li>
                 <li><Link href="/about" className="hover:text-primary transition-colors">{t("footer_ourTeam")}</Link></li>
               </ul>
             </div>
@@ -304,7 +332,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <li><Link href="/shop" className="hover:text-primary transition-colors">{t("footer_allProducts")}</Link></li>
                 <li><Link href="/cart" className="hover:text-primary transition-colors">{t("footer_cart")}</Link></li>
                 <li><Link href="/orders" className="hover:text-primary transition-colors">{t("footer_orders")}</Link></li>
-                <li>{t("footer_shipping")}</li>
+                <li><Link href="/contact" className="hover:text-primary transition-colors">{t("footer_shipping")}</Link></li>
               </ul>
             </div>
             <div>
@@ -320,12 +348,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="mt-12 pt-8 border-t text-center text-sm text-muted-foreground flex flex-col sm:flex-row justify-between items-center gap-4">
             <p>&copy; {new Date().getFullYear()} Dýralæknaþjónusta Eyjafjarðar ehf. {t("footer_rights")}</p>
             <div className="flex gap-4">
-              <a href="#" className="hover:text-primary transition-colors">{t("footer_privacy")}</a>
-              <a href="#" className="hover:text-primary transition-colors">{t("footer_terms")}</a>
+              <button onClick={() => setPrivacyOpen(true)} className="hover:text-primary transition-colors">{t("footer_privacy")}</button>
+              <button onClick={() => setTermsOpen(true)} className="hover:text-primary transition-colors">{t("footer_terms")}</button>
             </div>
           </div>
         </div>
       </footer>
+
+      <LegalModal open={privacyOpen} onClose={() => setPrivacyOpen(false)} title={t("privacy_title")} body={t("privacy_body")} />
+      <LegalModal open={termsOpen} onClose={() => setTermsOpen(false)} title={t("terms_title")} body={t("terms_body")} />
     </div>
   );
 }

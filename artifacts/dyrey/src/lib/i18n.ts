@@ -8,6 +8,7 @@ export const translations = {
     nav_book: "Book Appointment",
     nav_appointments: "My Appointments",
     nav_orders: "Orders",
+    nav_contact: "Contact",
     nav_signIn: "Sign In",
     nav_signOut: "Sign Out",
     nav_myAppointments: "My Appointments",
@@ -28,8 +29,61 @@ export const translations = {
     footer_contact: "Contact",
     footer_hours: "Mon–Fri: 08:00–17:00",
     footer_rights: "All rights reserved.",
-    footer_privacy: "Privacy",
-    footer_terms: "Terms",
+    footer_privacy: "Privacy Policy",
+    footer_terms: "Terms & Conditions",
+
+    // Legal modals
+    privacy_title: "Privacy Policy",
+    privacy_body: `Last updated: January 2025
+
+Dýralæknaþjónusta Eyjafjarðar ehf. ("we", "us") is committed to protecting your personal information.
+
+**Information we collect**
+We collect information you provide when booking appointments, placing orders, or creating an account — including your name, email address, phone number, and pet information.
+
+**How we use your information**
+Your information is used solely to provide our veterinary and shop services, send appointment confirmations and order updates, and improve our service.
+
+**Data storage**
+Your data is stored securely and is never sold or shared with third parties except where required by Icelandic law.
+
+**Your rights**
+You have the right to access, correct, or request deletion of your personal data at any time by contacting us at info@dyrey.is.
+
+**Contact**
+Dýralæknaþjónusta Eyjafjarðar ehf.
+Eyjafjarðarbraut, Akureyri
+info@dyrey.is`,
+
+    terms_title: "Terms & Conditions",
+    terms_body: `Last updated: January 2025
+
+**1. General**
+These terms govern your use of dyrey.is and any purchases made through the site.
+
+**2. Orders & Payment**
+Orders placed online are subject to availability. Payment is accepted online or on pickup as selected at checkout. We reserve the right to cancel orders in exceptional circumstances.
+
+**3. Delivery**
+Delivery is available within the Eyjafjörður region. Delivery fees are calculated at checkout. Estimated delivery times are provided at the time of order but are not guaranteed.
+
+**4. Prescription Products**
+Certain products require a valid veterinary prescription. By purchasing prescription products you confirm that you hold a valid prescription from a licensed veterinarian.
+
+**5. Returns**
+Unopened products in original packaging may be returned within 14 days. Prescription medications and perishable items cannot be returned.
+
+**6. Appointments**
+Appointment bookings are requests and are confirmed by our staff. We reserve the right to reschedule or cancel appointments with reasonable notice.
+
+**7. Liability**
+We are not liable for any indirect or consequential damages arising from the use of our services.
+
+**8. Governing Law**
+These terms are governed by Icelandic law.
+
+**Contact**
+info@dyrey.is`,
 
     // Home hero
     home_hero_title: "Compassionate Care for Your Beloved Pets",
@@ -216,6 +270,7 @@ export const translations = {
     nav_book: "Bóka tíma",
     nav_appointments: "Mínir tímar",
     nav_orders: "Pantanir",
+    nav_contact: "Samband",
     nav_signIn: "Skrá inn",
     nav_signOut: "Skrá út",
     nav_myAppointments: "Mínir tímar",
@@ -238,6 +293,59 @@ export const translations = {
     footer_rights: "Öll réttindi áskilin.",
     footer_privacy: "Persónuvernd",
     footer_terms: "Skilmálar",
+
+    // Legal modals
+    privacy_title: "Persónuverndarstefna",
+    privacy_body: `Síðast uppfært: Janúar 2025
+
+Dýralæknaþjónusta Eyjafjarðar ehf. („við", „okkur") leggur áherslu á að vernda persónuupplýsingar þínar.
+
+**Upplýsingar sem við söfnum**
+Við söfnum upplýsingum sem þú gefur upp þegar þú bókar tíma, gefur upp pöntun eða stofnar reikning — þ.m.t. nafn, netfang, símanúmer og upplýsingar um gæludýr.
+
+**Hvernig við notum upplýsingarnar**
+Upplýsingarnar eru eingöngu notaðar til að veita dýralækna- og verslunarþjónustu okkar, senda staðfestingar á tíma og pantanir og bæta þjónustuna.
+
+**Geymsla gagna**
+Gögnin þín eru geymd á öruggan hátt og eru aldrei seld eða deilt með þriðja aðilum nema þar sem íslensk lög krefjast þess.
+
+**Réttindi þín**
+Þú átt rétt á að fá aðgang að, leiðrétta eða óska eftir eyðingu persónuupplýsinga þinna hvenær sem er með því að hafa samband við okkur á info@dyrey.is.
+
+**Samband**
+Dýralæknaþjónusta Eyjafjarðar ehf.
+Eyjafjarðarbraut, Akureyri
+info@dyrey.is`,
+
+    terms_title: "Skilmálar",
+    terms_body: `Síðast uppfært: Janúar 2025
+
+**1. Almennt**
+Þessir skilmálar gilda um notkun þína á dyrey.is og allar kaup í gegnum síðuna.
+
+**2. Pantanir og greiðsla**
+Pantanir eru háðar birgðastöðu. Greiðsla er samþykkt á netinu eða við afhendingu eftir því sem valið er við greiðslu. Við áskildum okkur rétt til að afturkalla pantanir í undantekningartilvikum.
+
+**3. Sending**
+Sending er í boði á Eyjafjarðarsvæðinu. Sendingarkostnaður er reiknaður við greiðslu. Áætlaðar afhendingartímar eru gefnir upp við pöntun en eru ekki tryggðir.
+
+**4. Lyfseðilsskyld vara**
+Ákveðnar vörur krefjast gildra lyfseðla frá dýralækni. Með því að kaupa lyfseðilsskyldar vörur staðfestir þú að þú hafir gilt leyfi frá löggiltum dýralækni.
+
+**5. Skil**
+Óopnaðar vörur í upprunalegri umbúðum má skila innan 14 daga. Ekki er hægt að skila lyfseðilsskyldum lyfjum og skemmanlegu vörum.
+
+**6. Tímabókanir**
+Tímabókanir eru beiðnir og starfsfólk okkar staðfestir þær. Við áskildum okkur rétt til að færa eða afturkalla tíma með hæfilegu fyrirvara.
+
+**7. Ábyrgð**
+Við berum ekki ábyrgð á óbeinum eða afleiddum tjóni af notkun þjónustunnar okkar.
+
+**8. Gildandi lög**
+Þessir skilmálar lúta íslenskum lögum.
+
+**Samband**
+info@dyrey.is`,
 
     // Home hero
     home_hero_title: "Hlý umönnun fyrir gæludýrin þín",
