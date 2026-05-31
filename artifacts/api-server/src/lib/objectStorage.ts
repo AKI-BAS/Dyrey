@@ -62,16 +62,14 @@ export class ObjectStorageService {
 
   /**
    * Convert a raw R2 presigned PUT URL → internal object path /objects/<key>
-   * This path is what gets stored in the DB and passed back to GET /storage/objects/*
+   * R2 signed URL format: https://<account>.r2.cloudflarestorage.com/<key>?X-Amz-...
+   * The path IS the key — no bucket prefix in the path.
    */
   normalizeObjectEntityPath(rawUrl: string): string {
     try {
       const url = new URL(rawUrl);
-      // R2 signed URL path: /<bucket>/<key>?X-Amz-...
-      // path = /<bucket>/uploads/<uuid>
-      const parts = url.pathname.split("/").filter(Boolean);
-      // parts[0] = bucket name, rest = key segments
-      const key = parts.slice(1).join("/");
+      // pathname = /<key> e.g. /uploads/uuid
+      const key = url.pathname.startsWith("/") ? url.pathname.slice(1) : url.pathname;
       return `/objects/${key}`;
     } catch {
       return rawUrl;
