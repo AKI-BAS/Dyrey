@@ -32,15 +32,17 @@ interface StaffMember {
 }
 
 async function uploadPhoto(file: File): Promise<string> {
-  const res = await fetch(`${basePath}/api/storage/uploads/request-url`, {
+  const token = localStorage.getItem("admin_token") ?? "";
+  const res = await fetch(`${basePath}/api/storage/uploads/direct`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...uploadHeaders() },
-    body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+    headers: {
+      "Content-Type": file.type,
+      Authorization: `Bearer ${token}`,
+    },
+    body: file,
   });
-  if (!res.ok) throw new Error("Failed to get upload URL");
-  const { uploadURL, objectPath } = await res.json();
-  const put = await fetch(uploadURL, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
-  if (!put.ok) throw new Error("Upload failed");
+  if (!res.ok) throw new Error("Upload failed");
+  const { objectPath } = await res.json();
   return `${basePath}/api/storage/objects${objectPath}`;
 }
 

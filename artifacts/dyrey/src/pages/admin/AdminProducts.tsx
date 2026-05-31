@@ -39,19 +39,17 @@ const EMPTY: ProductForm = {
 
 async function uploadImage(file: File): Promise<string> {
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
-  const res = await fetch(`${base}/api/storage/uploads/request-url`, {
+  const token = localStorage.getItem("admin_token") ?? "";
+  const res = await fetch(`${base}/api/storage/uploads/direct`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
-  });
-  if (!res.ok) throw new Error("Failed to get upload URL");
-  const { uploadURL, objectPath } = await res.json();
-  const putRes = await fetch(uploadURL, {
-    method: "PUT",
-    headers: { "Content-Type": file.type },
+    headers: {
+      "Content-Type": file.type,
+      Authorization: `Bearer ${token}`,
+    },
     body: file,
   });
-  if (!putRes.ok) throw new Error("Failed to upload file");
+  if (!res.ok) throw new Error("Failed to upload file");
+  const { objectPath } = await res.json();
   return `${base}/api/storage/objects${objectPath}`;
 }
 
