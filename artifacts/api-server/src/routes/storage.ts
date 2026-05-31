@@ -32,10 +32,10 @@ router.post("/storage/uploads/direct", async (req: Request, res: Response): Prom
         return;
       }
       const objectPath = await storage.uploadBuffer(buffer, contentType);
-      // objectPath = /uploads/<uuid>, frontend builds: /api/storage/objects/uploads/<uuid>
+      console.log("[upload] objectPath returned:", objectPath);
       res.json({ objectPath });
     } catch (err) {
-      console.error("Upload error:", err);
+      console.error("[upload] error:", err);
       res.status(500).json({ error: "Upload failed" });
     }
   });
@@ -51,7 +51,9 @@ router.get("/storage/objects/*path", async (req: Request, res: Response): Promis
     const raw = req.params.path;
     const wildcardPath = Array.isArray(raw) ? raw.join("/") : raw;
     const objectPath = `/objects/${wildcardPath}`;
+    console.log("[serve] wildcardPath:", wildcardPath, "objectPath:", objectPath);
     const file = await storage.getObjectEntityFile(objectPath);
+    console.log("[serve] file found:", file);
     const response = await storage.downloadObject(file);
 
     res.status(response.status);
