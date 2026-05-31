@@ -13,12 +13,12 @@ const storage = new ObjectStorageService();
  * No CORS issues — upload goes through our own API.
  */
 router.post("/storage/uploads/direct", async (req: Request, res: Response): Promise<void> => {
-  const token = (req.headers.authorization ?? "").replace("Bearer ", "");
-  const validToken = process.env.ADMIN_PASSWORD ?? process.env.OWNER_PASSWORD ?? "";
-  if (!token || (token !== process.env.ADMIN_PASSWORD && token !== process.env.OWNER_PASSWORD)) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
+  const auth = req.headers.authorization ?? "";
+  if (!auth.startsWith("Bearer ")) { res.status(401).json({ error: "Unauthorized" }); return; }
+  try {
+    const decoded = Buffer.from(auth.replace("Bearer ", ""), "base64").toString("utf-8");
+    if (!decoded.startsWith("admin:")) { res.status(401).json({ error: "Unauthorized" }); return; }
+  } catch { res.status(401).json({ error: "Unauthorized" }); return; }
 
   const contentType = req.headers["content-type"] ?? "application/octet-stream";
 
