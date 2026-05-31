@@ -54,7 +54,7 @@ export class ObjectStorageService {
         ContentType: contentType,
       })
     );
-    return `/objects/${key}`;
+    return `/${key}`; // e.g. /uploads/<uuid> — caller prepends /api/storage/objects
   }
 
   /**

@@ -32,6 +32,7 @@ router.post("/storage/uploads/direct", async (req: Request, res: Response): Prom
         return;
       }
       const objectPath = await storage.uploadBuffer(buffer, contentType);
+      // objectPath = /uploads/<uuid>, frontend builds: /api/storage/objects/uploads/<uuid>
       res.json({ objectPath });
     } catch (err) {
       console.error("Upload error:", err);
