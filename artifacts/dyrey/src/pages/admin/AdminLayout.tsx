@@ -79,7 +79,7 @@ localStorage.removeItem("login_role");
   return (
     <div className="min-h-screen bg-slate-50 flex">
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col w-60 bg-white border-r shrink-0">
+      <aside className="hidden md:flex flex-col w-60 h-screen sticky top-0 bg-white border-r shrink-0">
         <div className="p-5 border-b">
           <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-0.5">Staff Portal</p>
           <p className="font-bold text-slate-800 text-sm">Dýrey Veterinary</p>
