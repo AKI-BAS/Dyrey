@@ -44,9 +44,13 @@ localStorage.setItem("login_role", (result as any).loginRole ?? "staff");
     }
   };
 
+  const loginRole = localStorage.getItem("login_role") ?? "staff";
+  const visibleStaffList = loginRole === "owner" ? staffList : staffList.filter(s => s.role !== "owner");
+
   const handleSelectStaff = (name: string, role: string) => {
   localStorage.setItem("staff_name", name);
-  localStorage.setItem("staff_role", role === "owner" ? "owner" : localStorage.getItem("login_role") ?? "staff");
+  // Owner access is only ever granted if the password used to log in was the owner password.
+  localStorage.setItem("staff_role", role === "owner" && loginRole === "owner" ? "owner" : "staff");
   setLocation("/admin/dashboard");
 };
 
@@ -62,7 +66,7 @@ localStorage.setItem("login_role", (result as any).loginRole ?? "staff");
             <CardDescription>Select your name to continue</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            {staffList.map(s => (
+            {visibleStaffList.map(s => (
   <Button key={s.id} variant="outline" className="w-full justify-start text-left" onClick={() => handleSelectStaff(s.name, s.role)}>
     <User className="h-4 w-4 mr-2 text-slate-400" />
     <span className="flex-1">{s.name}</span>

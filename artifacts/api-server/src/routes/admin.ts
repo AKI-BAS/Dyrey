@@ -20,18 +20,38 @@ const router: IRouter = Router();
 const ADMIN_PASSWORD = process.env["ADMIN_PASSWORD"] ?? "staff1234";
 const OWNER_PASSWORD = process.env["OWNER_PASSWORD"] ?? "owner1234";
 
-function requireAdminToken(req: any, res: any): boolean {
+function parseAdminToken(req: any): { role: "owner" | "staff" } | null {
   const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith("Bearer ")) {
+  if (!auth || !auth.startsWith("Bearer ")) return null;
+  try {
+    const decoded = Buffer.from(auth.replace("Bearer ", ""), "base64").toString("utf-8");
+    const parts = decoded.split(":");
+    if (parts[0] === "admin" && (parts[1] === "owner" || parts[1] === "staff") && parts[2]) {
+      return { role: parts[1] as "owner" | "staff" };
+    }
+  } catch { /* fall through */ }
+  return null;
+}
+
+function requireAdminToken(req: any, res: any): boolean {
+  if (!parseAdminToken(req)) {
     res.status(401).json({ error: "Not authenticated" });
     return false;
   }
-  try {
-    const decoded = Buffer.from(auth.replace("Bearer ", ""), "base64").toString("utf-8");
-    if (decoded.startsWith("admin:")) return true;
-  } catch { /* fall through */ }
-  res.status(401).json({ error: "Not authenticated" });
-  return false;
+  return true;
+}
+
+function requireOwnerToken(req: any, res: any): boolean {
+  const parsed = parseAdminToken(req);
+  if (!parsed) {
+    res.status(401).json({ error: "Not authenticated" });
+    return false;
+  }
+  if (parsed.role !== "owner") {
+    res.status(403).json({ error: "Owner access required" });
+    return false;
+  }
+  return true;
 }
 
 router.post("/admin/login", async (req, res): Promise<void> => {
@@ -40,7 +60,7 @@ router.post("/admin/login", async (req, res): Promise<void> => {
   const isOwner = parsed.data.password === OWNER_PASSWORD;
   const isStaff = parsed.data.password === ADMIN_PASSWORD;
   if (!isOwner && !isStaff) { res.status(401).json({ error: "Invalid password" }); return; }
-  const token = Buffer.from(`admin:${Date.now()}`).toString("base64");
+  const token = Buffer.from(`admin:${isOwner ? "owner" : "staff"}:${Date.now()}`).toString("base64");
   res.json({ success: true, token, loginRole: isOwner ? "owner" : "staff" });
 });
 
@@ -195,7 +215,7 @@ router.get("/admin/site-content", async (req, res): Promise<void> => {
 });
 
 router.put("/admin/site-content", async (req, res): Promise<void> => {
-  if (!requireAdminToken(req, res)) return;
+  if (!requireOwnerToken(req, res)) return;
   const updates = req.body as Record<string, string>;
   if (typeof updates !== "object" || Array.isArray(updates)) { res.status(400).json({ error: "body must be object" }); return; }
   const now = new Date();
@@ -222,7 +242,7 @@ router.get("/admin/staff", async (req, res): Promise<void> => {
 });
 
 router.post("/admin/staff", async (req, res): Promise<void> => {
-  if (!requireAdminToken(req, res)) return;
+  if (!requireOwnerToken(req, res)) return;
   const { name, role = "staff" } = req.body as { name: string; role?: string };
   if (!name || typeof name !== "string") { res.status(400).json({ error: "name required" }); return; }
   const [row] = await db.insert(staffMembersTable).values({ name, role, createdAt: new Date() }).returning();
@@ -230,7 +250,7 @@ router.post("/admin/staff", async (req, res): Promise<void> => {
 });
 
 router.patch("/admin/staff/:id", async (req, res): Promise<void> => {
-  if (!requireAdminToken(req, res)) return;
+  if (!requireOwnerToken(req, res)) return;
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
   const { role, bio, photoUrl } = req.body as { role?: string; bio?: string; photoUrl?: string };
@@ -245,7 +265,7 @@ router.patch("/admin/staff/:id", async (req, res): Promise<void> => {
 });
 
 router.delete("/admin/staff/:id", async (req, res): Promise<void> => {
-  if (!requireAdminToken(req, res)) return;
+  if (!requireOwnerToken(req, res)) return;
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
   await db.delete(staffMembersTable).where(eq(staffMembersTable.id, id));
@@ -262,7 +282,7 @@ router.get("/admin/settings", async (req, res): Promise<void> => {
 });
 
 router.patch("/admin/settings", async (req, res): Promise<void> => {
-  if (!requireAdminToken(req, res)) return;
+  if (!requireOwnerToken(req, res)) return;
   const updates = req.body as Record<string, string>;
   const now = new Date();
   for (const [key, value] of Object.entries(updates)) {
