@@ -21,6 +21,7 @@ function val(data: Record<string, string> | undefined, key: string, fallback = "
 }
 
 export default function Contact() {
+  const t = useT();
   const { data } = useSiteContent();
 
   const shopPhone    = val(data, "contact_shop_phone",        "+354 460 0000");
@@ -30,15 +31,15 @@ export default function Contact() {
   const address      = val(data, "contact_address",           "Eyjafjarðarbraut, Akureyri");
   const shopHours    = val(data, "contact_shop_hours",        "Mon–Fri 09:00–18:00 · Sat 10:00–15:00");
   const apptHours    = val(data, "contact_appt_hours",        "Mon–Fri 08:00–17:00");
-  const dutyLabel    = val(data, "contact_duty_label",        "Duty number (this week)");
-  const dutyNote     = val(data, "contact_duty_note",         "For urgent cases outside opening hours");
+  const dutyLabel    = val(data, "contact_duty_label",        t("contact_duty_label_fallback"));
+  const dutyNote     = val(data, "contact_duty_note",         t("contact_duty_note_fallback"));
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-4xl">
       <div className="mb-10">
-        <h1 className="text-3xl font-bold tracking-tight">Contact Us</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t("contact_title")}</h1>
         <p className="text-muted-foreground mt-2 max-w-xl">
-          Get in touch with the clinic — whether it's about the shop, booking an appointment, or an urgent matter.
+          {t("contact_subtitle")}
         </p>
       </div>
 
@@ -51,8 +52,8 @@ export default function Contact() {
               <ShoppingBag className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="font-semibold text-base">Shop</h2>
-              <p className="text-xs text-muted-foreground">Products & orders</p>
+              <h2 className="font-semibold text-base">{t("contact_shop_title")}</h2>
+              <p className="text-xs text-muted-foreground">{t("contact_shop_desc")}</p>
             </div>
           </div>
           <div className="space-y-3 text-sm">
@@ -74,8 +75,8 @@ export default function Contact() {
               <CalendarDays className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <h2 className="font-semibold text-base">Appointments</h2>
-              <p className="text-xs text-muted-foreground">Bookings & clinic enquiries</p>
+              <h2 className="font-semibold text-base">{t("contact_appt_title")}</h2>
+              <p className="text-xs text-muted-foreground">{t("contact_appt_desc")}</p>
             </div>
           </div>
           <div className="space-y-3 text-sm">
@@ -114,8 +115,8 @@ export default function Contact() {
               <MapPin className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <h2 className="font-semibold text-base">Find Us</h2>
-              <p className="text-xs text-muted-foreground">Address & general contact</p>
+              <h2 className="font-semibold text-base">{t("contact_findus_title")}</h2>
+              <p className="text-xs text-muted-foreground">{t("contact_findus_desc")}</p>
             </div>
           </div>
           <div className="space-y-3 text-sm">
