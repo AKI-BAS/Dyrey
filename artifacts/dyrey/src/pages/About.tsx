@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { User } from "lucide-react";
+import { useT } from "@/hooks/use-language";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -28,7 +29,7 @@ function val(data: Record<string, string> | undefined, key: string, fallback = "
 export default function About() {
   const { data: content } = useSiteContent();
   const { data: staff } = useStaff();
-
+  const t = useT();
   const aboutTitle    = val(content, "about_title",    "About Dýrey");
   const aboutBody     = val(content, "about_body",     "Dýrey Veterinary provides compassionate, modern care for animals across Eyjafjörður. Our team of experienced vets and nurses is dedicated to the health and wellbeing of your pets.");
 
@@ -47,8 +48,8 @@ export default function About() {
       {staff && staff.length > 0 && (
         <section className="space-y-6">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">Our Team</h2>
-            <p className="text-muted-foreground mt-1">The people who care for your animals</p>
+            <h2 className="text-2xl font-bold tracking-tight">{t("about_team_title")}</h2>
+            <p className="text-muted-foreground mt-1">{t("about_team_subtitle")}</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {staff.map(member => (
