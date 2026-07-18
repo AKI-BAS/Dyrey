@@ -10,9 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Bell, Loader2, Check, Megaphone, Save, Phone, Mail, MapPin, PhoneCall, BookOpen, Info } from "lucide-react";
+import { Plus, Pencil, Trash2, Bell, Loader2, Check, Megaphone, Save, Phone, Mail, MapPin, PhoneCall, BookOpen, Info, ShieldCheck, FileText, Truck } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { translations } from "@/lib/i18n";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -422,6 +423,7 @@ export default function AdminContent() {
             <TabsTrigger value="contact">Contact Page</TabsTrigger>
             <TabsTrigger value="about">About Page</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            <TabsTrigger value="legal">Skilmálar & Sendingar</TabsTrigger>
           </TabsList>
 
           {/* ─── Homepage ─── */}
@@ -665,6 +667,93 @@ export default function AdminContent() {
                     })}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ─── Legal & Shipping ─── */}
+          <TabsContent value="legal" className="space-y-6 mt-0">
+            <Card>
+              <CardHeader className="pb-3 border-b">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <ShieldCheck className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Persónuvernd</CardTitle>
+                    <p className="text-xs text-slate-400 mt-0.5">Birtist í "Persónuvernd" glugganum neðst á síðunni</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-500">Texti persónuverndarstefnu</label>
+                  <textarea
+                    rows={14}
+                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm resize-none font-mono"
+                    value={cf("privacy_body", translations.is.privacy_body)}
+                    onChange={e => setField("privacy_body", e.target.value)}
+                  />
+                  <p className="text-xs text-slate-400">Notaðu **texti** fyrir feitletrun. Línubil eru varðveitt.</p>
+                </div>
+                <SaveBar />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3 border-b">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <FileText className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Skilmálar</CardTitle>
+                    <p className="text-xs text-slate-400 mt-0.5">Birtist í "Skilmálar" glugganum neðst á síðunni</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-500">Texti skilmála</label>
+                  <textarea
+                    rows={14}
+                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm resize-none font-mono"
+                    value={cf("terms_body", translations.is.terms_body)}
+                    onChange={e => setField("terms_body", e.target.value)}
+                  />
+                  <p className="text-xs text-slate-400">Notaðu **texti** fyrir feitletrun. Línubil eru varðveitt.</p>
+                </div>
+                <SaveBar />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3 border-b">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <Truck className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Sendingarreglur</CardTitle>
+                    <p className="text-xs text-slate-400 mt-0.5">Birtist í "Sendingarreglur" glugganum neðst á síðunni — auð í bili þar til reglur eru tilbúnar</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-500">Texti sendingarreglna</label>
+                  <textarea
+                    rows={10}
+                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm resize-none font-mono"
+                    value={cf("shipping_body", "")}
+                    onChange={e => setField("shipping_body", e.target.value)}
+                    placeholder="T.d. sendingarkostnaður, afhendingartími, svæði sem við sendum á…"
+                  />
+                  <p className="text-xs text-slate-400">
+                    Notaðu **texti** fyrir feitletrun. Autt = viðskiptavinir sjá skilaboð um að reglur séu væntanlegar.
+                  </p>
+                </div>
+                <SaveBar />
               </CardContent>
             </Card>
           </TabsContent>

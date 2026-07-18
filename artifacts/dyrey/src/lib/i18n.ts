@@ -85,6 +85,10 @@ These terms are governed by Icelandic law.
 **Contact**
 info@dyrey.is`,
 
+    shipping_title: "Shipping Policy",
+    shipping_body: "",
+    shipping_empty: "Shipping policy coming soon.",
+
     // Home hero
     home_hero_title: "Compassionate Care for Your Beloved Pets",
     home_hero_subtitle: "Modern veterinary medicine combined with genuine warmth. From routine check-ups to specialized treatments, we are here for you and your animals in Eyjafjörður.",
@@ -357,6 +361,10 @@ Við berum ekki ábyrgð á óbeinum eða afleiddum tjóni af notkun þjónustun
 
 **Samband**
 info@dyrey.is`,
+
+    shipping_title: "Sendingarreglur",
+    shipping_body: "",
+    shipping_empty: "Sendingarreglur eru væntanlegar.",
 
     // Home hero
     home_hero_title: "Hlý umönnun fyrir gæludýrin þín",

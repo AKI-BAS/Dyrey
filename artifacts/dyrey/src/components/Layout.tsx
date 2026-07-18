@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
-import { ShoppingCart, Menu, Home, Package, CalendarDays, CalendarIcon, LogIn, LogOut, User, ChevronDown, PawPrint, X, Bell, Phone } from "lucide-react";
-import { useState, useEffect } from "react";
+import { ShoppingCart, Menu, Home, Package, CalendarDays, CalendarIcon, LogIn, LogOut, User, ChevronDown, PawPrint, X, Bell, Phone } from "lucide-react";import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useClerk, useUser } from "@clerk/react";
 import logoPath from "@assets/image_1778924453421.png";
 import { useCart } from "@/hooks/use-cart";
@@ -86,8 +86,21 @@ function LanguageToggle() {
   );
 }
 
+// ── Public site content (owner-editable legal text) ────────────────────────────
+function useSiteContent() {
+  return useQuery<Record<string, string>>({
+    queryKey: ["site-content"],
+    queryFn: async () => {
+      const res = await fetch(`${basePath}/api/site-content`);
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+}
+
 // ── Legal modal ───────────────────────────────────────────────────────────────
-function LegalModal({ open, onClose, title, body }: { open: boolean; onClose: () => void; title: string; body: string }) {
+function LegalModal({ open, onClose, title, body, emptyLabel }: { open: boolean; onClose: () => void; title: string; body: string; emptyLabel?: string }) {
   // Render **bold** markers as bold spans
   const renderBody = (text: string) =>
     text.split(/(\*\*[^*]+\*\*)/).map((part, i) =>
@@ -100,11 +113,15 @@ function LegalModal({ open, onClose, title, body }: { open: boolean; onClose: ()
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <div className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed space-y-1">
-          {body.split("\n").map((line, i) => (
-            <p key={i}>{renderBody(line)}</p>
-          ))}
-        </div>
+        {body.trim() ? (
+          <div className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed space-y-1">
+            {body.split("\n").map((line, i) => (
+              <p key={i}>{renderBody(line)}</p>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">{emptyLabel}</p>
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -115,11 +132,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
+  const [shippingOpen, setShippingOpen] = useState(false);
   const items = useCart((state) => state.items);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const { user, isLoaded } = useUser();
   const { signOut } = useClerk();
   const t = useT();
+  const { data: siteContent } = useSiteContent();
+  const legalBody = (key: string, fallback: string) => siteContent?.[key]?.trim() ? siteContent[key] : fallback;
 
   const navigation = [
     { name: t("nav_home"), href: "/", icon: Home },
@@ -332,7 +352,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <li><Link href="/shop" className="hover:text-primary transition-colors">{t("footer_allProducts")}</Link></li>
                 <li><Link href="/cart" className="hover:text-primary transition-colors">{t("footer_cart")}</Link></li>
                 <li><Link href="/orders" className="hover:text-primary transition-colors">{t("footer_orders")}</Link></li>
-                <li><Link href="/contact" className="hover:text-primary transition-colors">{t("footer_shipping")}</Link></li>
+                <li><button onClick={() => setShippingOpen(true)} className="hover:text-primary transition-colors">{t("footer_shipping")}</button></li>
               </ul>
             </div>
             <div>
@@ -355,8 +375,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </footer>
 
-      <LegalModal open={privacyOpen} onClose={() => setPrivacyOpen(false)} title={t("privacy_title")} body={t("privacy_body")} />
-      <LegalModal open={termsOpen} onClose={() => setTermsOpen(false)} title={t("terms_title")} body={t("terms_body")} />
+      <LegalModal open={privacyOpen} onClose={() => setPrivacyOpen(false)} title={t("privacy_title")} body={legalBody("privacy_body", t("privacy_body"))} />
+      <LegalModal open={termsOpen} onClose={() => setTermsOpen(false)} title={t("terms_title")} body={legalBody("terms_body", t("terms_body"))} />
+      <LegalModal
+        open={shippingOpen}
+        onClose={() => setShippingOpen(false)}
+        title={t("shipping_title")}
+        body={legalBody("shipping_body", "")}
+        emptyLabel={t("shipping_empty")}
+      />
     </div>
   );
 }
